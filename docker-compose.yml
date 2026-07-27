@@ -5,7 +5,8 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       DATABASE_URL: sqlite:///./data/autopassport.db
       STORAGE_PATH: ./data/storage
