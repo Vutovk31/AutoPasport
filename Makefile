@@ -1,4 +1,4 @@
-.PHONY: install migrate run test docker-build docker-up
+.PHONY: install migrate run test retention-scan retention-apply compose-check docker-build docker-up
 
 install:
 	python -m pip install -r requirements.txt
@@ -11,6 +11,12 @@ run:
 
 test:
 	pytest -q
+
+retention-scan:
+	python scripts/cleanup_attachments.py
+
+retention-apply:
+	python scripts/cleanup_attachments.py --apply
 
 compose-check:
 	docker compose config -q
