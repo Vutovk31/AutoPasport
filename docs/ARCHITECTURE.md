@@ -38,3 +38,16 @@ push / pull request
 ```
 
 Проверка выполняется до миграций и тестов. Публичный репозиторий не должен содержать `.env`, рабочую SQLite-базу, приватные vehicle-файлы, ключи, токены или реальный VIN вне явно разрешённых синтетических шаблонов.
+
+## Owner storage quota boundary
+
+```text
+new Attachment
+→ resolve owner through HistoryEvent or ServiceVisit
+→ collect active attachments across all owner vehicles
+→ check MAX_OWNER_ATTACHMENTS
+→ check projected MAX_OWNER_STORAGE_BYTES
+→ insert or fail with structured HTTP error
+```
+
+Лимит применяется на уровне SQLAlchemy `before_insert`, поэтому одинаково защищает вложения старых событий и сервисных визитов. Soft-deleted вложения не потребляют квоту. Проверка выполняется до записи строки Attachment; физический файл удаляется существующим rollback-контуром upload endpoint при исключении.
