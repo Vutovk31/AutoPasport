@@ -46,9 +46,10 @@ def test_private_env_and_database_are_rejected(tmp_path):
 def test_secret_and_private_key_patterns_are_rejected(tmp_path):
     module = load_module()
     make_required(tmp_path, module)
+    github_token = "ghp_" + ("A" * 30)
+    private_key_header = "-----BEGIN " + "PRIVATE KEY-----"
     (tmp_path / "leak.txt").write_text(
-        "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ123456\n"
-        "-----BEGIN PRIVATE KEY-----\n",
+        github_token + "\n" + private_key_header + "\n",
         encoding="utf-8",
     )
     errors = module.scan_repository(tmp_path)
@@ -59,5 +60,6 @@ def test_secret_and_private_key_patterns_are_rejected(tmp_path):
 def test_real_vin_pattern_is_rejected_outside_allowlist(tmp_path):
     module = load_module()
     make_required(tmp_path, module)
-    (tmp_path / "notes.md").write_text("JMZBK12Z271542305", encoding="utf-8")
+    vin_like_value = "WVWZZZ1JZX" + "W000001"
+    (tmp_path / "notes.md").write_text(vin_like_value, encoding="utf-8")
     assert "possible real VIN in public file: notes.md" in module.scan_repository(tmp_path)
