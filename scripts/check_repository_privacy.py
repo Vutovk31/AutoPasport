@@ -16,8 +16,10 @@ REQUIRED_PATHS = {
     "scripts/entrypoint.sh",
     "scripts/check_config.py",
     "scripts/cleanup_attachments.py",
+    "scripts/release_check.py",
     "tests/test_mvp.py",
     "tests/test_attachment_retention.py",
+    "tests/test_release_check.py",
     ".github/workflows/ci.yml",
     "VERSION",
 }
