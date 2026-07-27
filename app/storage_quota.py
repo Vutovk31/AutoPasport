@@ -1,0 +1,120 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+import os
+
+from fastapi import HTTPException
+from sqlalchemy import event, func, or_, select
+
+
+DEFAULT_MAX_OWNER_ATTACHMENTS = 100
+DEFAULT_MAX_OWNER_STORAGE_BYTES = 250 * 1024 * 1024
+
+
+@dataclass(frozen=True)
+class StorageUsage:
+    attachments: int
+    bytes_used: int
+    max_attachments: int
+    max_bytes: int
+
+    def as_dict(self) -> dict[str, int]:
+        return {
+            "attachments": self.attachments,
+            "bytes_used": self.bytes_used,
+            "max_attachments": self.max_attachments,
+            "max_bytes": self.max_bytes,
+            "attachments_remaining": max(self.max_attachments - self.attachments, 0),
+            "bytes_remaining": max(self.max_bytes - self.bytes_used, 0),
+        }
+
+
+def _positive_limit(name: str, default: int) -> int:
+    raw = os.getenv(name, str(default)).strip()
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise RuntimeError(f"{name} must be an integer") from exc
+    if value <= 0:
+        raise RuntimeError(f"{name} must be greater than zero")
+    return value
+
+
+def quota_limits() -> tuple[int, int]:
+    return (
+        _positive_limit("MAX_OWNER_ATTACHMENTS", DEFAULT_MAX_OWNER_ATTACHMENTS),
+        _positive_limit("MAX_OWNER_STORAGE_BYTES", DEFAULT_MAX_OWNER_STORAGE_BYTES),
+    )
+
+
+def register_storage_quota_listener(*, Attachment, HistoryEvent, ServiceVisit, Vehicle) -> None:
+    """Enforce owner-wide attachment quotas before an Attachment row is inserted.
+
+    The check covers active attachments linked to every vehicle owned by the user,
+    regardless of whether the file belongs to a legacy event or a service visit.
+    """
+
+    def owner_id_for_target(connection, target):
+        if target.event_id:
+            statement = (
+                select(Vehicle.owner_id)
+                .join(HistoryEvent, HistoryEvent.vehicle_id == Vehicle.id)
+                .where(HistoryEvent.id == target.event_id)
+            )
+        elif target.visit_id:
+            statement = (
+                select(Vehicle.owner_id)
+                .join(ServiceVisit, ServiceVisit.vehicle_id == Vehicle.id)
+                .where(ServiceVisit.id == target.visit_id)
+            )
+        else:
+            return None
+        return connection.execute(statement).scalar_one_or_none()
+
+    def usage_for_owner(connection, owner_id: str) -> StorageUsage:
+        max_attachments, max_bytes = quota_limits()
+        vehicle_ids = select(Vehicle.id).where(Vehicle.owner_id == owner_id)
+        event_ids = select(HistoryEvent.id).where(HistoryEvent.vehicle_id.in_(vehicle_ids))
+        visit_ids = select(ServiceVisit.id).where(ServiceVisit.vehicle_id.in_(vehicle_ids))
+        statement = select(
+            func.count(Attachment.id),
+            func.coalesce(func.sum(Attachment.size_bytes), 0),
+        ).where(
+            Attachment.is_deleted.is_(False),
+            or_(Attachment.event_id.in_(event_ids), Attachment.visit_id.in_(visit_ids)),
+        )
+        count, bytes_used = connection.execute(statement).one()
+        return StorageUsage(int(count or 0), int(bytes_used or 0), max_attachments, max_bytes)
+
+    def before_insert(_mapper, connection, target):
+        owner_id = owner_id_for_target(connection, target)
+        if owner_id is None:
+            raise HTTPException(
+                status_code=409,
+                detail={"code": "attachment_owner_unresolved", "message": "Attachment owner cannot be resolved"},
+            )
+
+        usage = usage_for_owner(connection, owner_id)
+        if usage.attachments >= usage.max_attachments:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "owner_attachment_quota_exceeded",
+                    "message": "Owner attachment count quota exceeded",
+                    "usage": usage.as_dict(),
+                },
+            )
+
+        projected_bytes = usage.bytes_used + int(target.size_bytes or 0)
+        if projected_bytes > usage.max_bytes:
+            raise HTTPException(
+                status_code=413,
+                detail={
+                    "code": "owner_storage_quota_exceeded",
+                    "message": "Owner storage quota exceeded",
+                    "projected_bytes": projected_bytes,
+                    "usage": usage.as_dict(),
+                },
+            )
+
+    event.listen(Attachment, "before_insert", before_insert)
