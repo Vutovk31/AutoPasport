@@ -105,3 +105,20 @@ owner session restored
 ```
 
 Frontend рассчитывает только процент для progress-индикатора из серверных абсолютных значений; лимиты и остаток не воспроизводятся на клиенте. Structured error codes `vehicle_share_link_quota_exceeded` и `owner_share_link_quota_exceeded` преобразуются в понятные сообщения, после чего usage перечитывается независимо от успеха создания ссылки.
+
+## Active public share management boundary
+
+```text
+authenticated GET /api/me/shares/list
+→ current_user
+→ active_share_links(session, owner_id)
+→ join ShareLink with owned Vehicle
+→ exclude revoked and expired links
+→ return vehicle identity, expires_at and seconds_remaining
+→ owner UI revoke action
+→ DELETE /api/share/{share_id}
+→ ownership check through vehicle
+→ refresh list and usage
+```
+
+Токен публичной ссылки не возвращается списковым endpoint: владелец получает только идентификатор записи, автомобиль и срок действия. Отзыв использует существующий mutation endpoint с CSRF-защитой и повторной owner-проверкой.
