@@ -1,6 +1,10 @@
-# AutoPassport v0.23.0
+# AutoPassport v0.24.1
 
-Каноническая MVP-сборка с ремонтными визитами, позициями работ, динамической trust-моделью, временным публичным паспортом, PDF-отчётом и backup SQLite + storage.
+Каноническая MVP-сборка электронного паспорта автомобиля: ремонтные визиты, позиции работ и деталей, trust-модель, временный публичный паспорт, PDF-отчёт, PWA и backup SQLite + storage.
+
+## Статус репозитория
+
+GitHub является каноническим источником исходного кода. Workflow `Repository integrity` проверяет наличие обязательных каталогов и файлов на каждом push и pull request.
 
 ## Локальный запуск
 
@@ -21,62 +25,28 @@ uvicorn app.main:app --reload
 pytest -q
 ```
 
-## Backup
-
-В `.env` задайте:
-
-```text
-ADMIN_BACKUP_TOKEN=change-me
-BACKUP_PATH=./data/backups
-```
-
-Создать backup:
-
-```bash
-curl -X POST http://127.0.0.1:8000/api/admin/backups \
-  -H 'X-Admin-Token: change-me'
-```
+## Backup и restore
 
 Backup включает SQLite-базу, storage-файлы и `manifest.json` с SHA-256.
-
-
-## PWA
-
-AutoPassport 0.23.0 includes an installable PWA shell:
-
-```text
-/manifest.webmanifest
-/service-worker.js
-/offline.html
-/static/icons/icon-192.png
-/static/icons/icon-512.png
-```
-
-The service worker caches only the application shell. API responses, PDFs and private vehicle data are intentionally network-only.
-
-## Docker release run
-
-```bash
-cp .env.example .env
-docker compose up --build
-```
-
-The container applies Alembic migrations on startup and exposes the app at http://127.0.0.1:8000.
-
-## CI
-
-GitHub Actions runs migrations, compiles Python modules, executes pytest and validates docker-compose syntax.
-
-## Verification note
-
-`pytest -q` does not require Docker. Docker Compose validation requires Docker to be installed locally or in CI.
-
-
-## Restore hardening
 
 ```bash
 python scripts/restore_backup.py data/backups/<backup>.zip data/restored
 python scripts/restore_backup.py data/backups/<backup>.zip data/restored --verify-only
 ```
 
-Restore checks archive paths, database SHA-256, storage SHA-256, SQLite integrity and required schema tables.
+Restore проверяет пути архива, SHA-256 базы и storage, SQLite integrity и наличие обязательных таблиц.
+
+## PWA
+
+Service worker кеширует только оболочку приложения. API, PDF и приватные данные остаются network-only.
+
+## Docker
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+## CI
+
+GitHub Actions проверяет целостность структуры, согласованность версии, миграции, компиляцию Python, pytest и синтаксис Docker Compose.
