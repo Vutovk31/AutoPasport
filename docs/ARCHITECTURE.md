@@ -92,3 +92,16 @@ new ShareLink
 ```
 
 Активной считается только ссылка без `revoked_at` и с `expires_at` позже текущего времени. Enforcement выполняется на SQLAlchemy `before_insert`, поэтому защищает все пути создания ссылок. `GET /api/me/shares` использует тот же owner scope и показывает фактическое количество активных ссылок и остаток лимита.
+
+## Public share owner UI boundary
+
+```text
+owner session restored
+→ GET /api/me/shares
+→ render active / maximum / remaining
+→ warn at 80%
+→ critical state at 100%
+→ refresh after every create attempt and manual request
+```
+
+Frontend рассчитывает только процент для progress-индикатора из серверных абсолютных значений; лимиты и остаток не воспроизводятся на клиенте. Structured error codes `vehicle_share_link_quota_exceeded` и `owner_share_link_quota_exceeded` преобразуются в понятные сообщения, после чего usage перечитывается независимо от успеха создания ссылки.
