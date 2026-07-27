@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+DEMO_VIN = "DEMO-VIN-00000001"
+
 
 def test_active_share_list_contract(tmp_path, monkeypatch):
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path/'shares.db'}")
@@ -17,7 +19,7 @@ def test_active_share_list_contract(tmp_path, monkeypatch):
     with SessionLocal() as session:
         user = User(email="owner@example.test", password_hash="hash")
         session.add(user); session.flush()
-        vehicle = Vehicle(owner_id=user.id, vin="JMZBK12Z270000001", make="Mazda", model="3", year=2006, current_mileage=178000)
+        vehicle = Vehicle(owner_id=user.id, vin=DEMO_VIN, make="Mazda", model="3", year=2006, current_mileage=178000)
         session.add(vehicle); session.flush()
         active = ShareLink(vehicle_id=vehicle.id, token_hash="a" * 64, created_at=now, expires_at=now + timedelta(minutes=30))
         expired = ShareLink(vehicle_id=vehicle.id, token_hash="b" * 64, created_at=now - timedelta(hours=2), expires_at=now - timedelta(hours=1))
