@@ -8,6 +8,9 @@
 - Docker entrypoint теперь проверяет конфигурацию до миграций и запуска приложения.
 - Добавлены тесты production configuration gate.
 - Основной CI проверяет runtime-конфигурацию перед миграциями.
+- Добавлен `scripts/check_repository_privacy.py` для защиты публичного репозитория от приватных файлов, credential containers, секретов и возможных реальных VIN.
+- Добавлены тесты privacy gate.
+- Основной CI выполняет privacy gate до миграций и функциональных тестов.
 
 ## 0.24.1
 
