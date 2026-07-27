@@ -10,6 +10,8 @@ function errorMessage(body, status) {
   const code = typeof detail === 'object' ? detail.code : body?.code;
   if (code === 'owner_attachment_quota_exceeded') return 'Достигнут лимит количества документов. Удалите ненужные вложения.';
   if (code === 'owner_storage_quota_exceeded') return 'Недостаточно места в хранилище. Удалите ненужные вложения.';
+  if (code === 'vehicle_share_link_quota_exceeded') return 'Для этого автомобиля уже действует максимальное число публичных ссылок.';
+  if (code === 'owner_share_link_quota_exceeded') return 'Достигнут общий лимит активных публичных ссылок.';
   return typeof detail === 'string' ? detail : `Ошибка HTTP ${status}`;
 }
 
@@ -55,13 +57,37 @@ async function refreshStorage() {
   }
 }
 
+function renderShares(usage) {
+  const active = Number(usage.active_links || 0);
+  const maximum = Math.max(Number(usage.max_active_links || 0), 1);
+  const remaining = Math.max(Number(usage.remaining_links || 0), 0);
+  const percent = Math.min(100, Math.round((active / maximum) * 100));
+  $('#shareLinks').textContent = `${active} из ${usage.max_active_links}`;
+  $('#shareProgress').value = percent;
+  $('#shareSummary').textContent = `Можно создать ещё ${remaining}`;
+  const warning = $('#shareWarning');
+  warning.hidden = percent < 80;
+  warning.className = percent >= 100 ? 'warning danger' : 'warning';
+  warning.textContent = percent >= 100
+    ? 'Лимит активных публичных ссылок исчерпан.'
+    : 'Использовано не менее 80% лимита публичных ссылок.';
+}
+
+async function refreshShares() {
+  try {
+    renderShares(await api('/api/me/shares'));
+  } catch (error) {
+    $('#shareSummary').textContent = `Не удалось получить данные: ${error.message}`;
+  }
+}
+
 async function garage() {
   const rows = await api('/api/vehicles');
   $('#app').hidden = false;
   $('#auth').hidden = true;
   $('#garage').innerHTML = rows.map(v => `<button class="vehicle" data-id="${v.id}"><b>${v.make} ${v.model}</b><span>${v.current_mileage.toLocaleString('ru-RU')} км</span></button>`).join('') || '<p>Добавьте первый автомобиль.</p>';
   document.querySelectorAll('.vehicle').forEach(button => button.onclick = () => openVehicle(button.dataset.id));
-  await refreshStorage();
+  await Promise.all([refreshStorage(), refreshShares()]);
 }
 
 function money(value) { return value === null || value === undefined ? '' : `${Number(value).toLocaleString('ru-RU')} ₽`; }
@@ -82,8 +108,19 @@ $('#authForm').onsubmit = async event => { event.preventDefault(); const body = 
 $('#vehicleForm').onsubmit = async event => { event.preventDefault(); const vehicle = await api('/api/vehicles', { method: 'POST', body: new FormData(event.target) }); event.target.reset(); await garage(); await openVehicle(vehicle.id); };
 $('#eventForm').onsubmit = async event => { event.preventDefault(); await api(`/api/vehicles/${vehicleId}/events`, { method: 'POST', body: new FormData(event.target) }); event.target.reset(); await openVehicle(vehicleId); };
 $('#visitForm').onsubmit = async event => { event.preventDefault(); const f = new FormData(event.target); const body = { kind: f.get('kind'), visit_date: f.get('visit_date'), mileage: f.get('mileage') || null, title: f.get('title'), location: f.get('location'), total_cost_rubles: f.get('total_cost_rubles') || null, total_cost_status: f.get('total_cost_status'), total_cost_visible_to_public: f.get('total_cost_visible_to_public') === 'on', items: [{ item_type: f.get('item_type'), title: f.get('item_title'), brand: f.get('item_brand'), quantity: f.get('item_quantity'), unit: f.get('item_unit'), cost_rubles: f.get('item_cost_rubles') || null, cost_status: f.get('item_cost_status') }] }; await api(`/api/vehicles/${vehicleId}/visits`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); event.target.reset(); await openVehicle(vehicleId); };
-$('#share').onclick = async () => { const share = await api(`/api/vehicles/${vehicleId}/share`, { method: 'POST' }); await navigator.clipboard.writeText(share.url).catch(() => {}); alert(`Ссылка действует 1 час:\n${share.url}`); };
+$('#share').onclick = async () => {
+  try {
+    const share = await api(`/api/vehicles/${vehicleId}/share`, { method: 'POST' });
+    await navigator.clipboard.writeText(share.url).catch(() => {});
+    await refreshShares();
+    alert(`Ссылка действует 1 час:\n${share.url}`);
+  } catch (error) {
+    await refreshShares();
+    alert(error.message);
+  }
+};
 $('#refreshStorage').onclick = refreshStorage;
+$('#refreshShares').onclick = refreshShares;
 
 api('/api/me').then(garage).catch(() => {});
 
