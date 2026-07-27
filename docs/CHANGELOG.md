@@ -54,6 +54,9 @@
 - Release runner теперь преобразует отсутствующую executable и системную ошибку запуска в failed step с кодом 127.
 - Для каждого release step добавлен явный timeout; превышение фиксируется кодом 124 с сохранением доступного stdout/stderr.
 - Добавлены тесты продолжения release-check после отсутствующей команды, timeout diagnostics и передачи лимита времени runner-у.
+- CI создаёт bootstrap `release-check.json` до setup Python и установки зависимостей, поэтому artifact сохраняется даже при раннем падении workflow.
+- Добавлен ручной запуск `workflow_dispatch` для повторяемой release verification без нового commit.
+- Добавлены статические тесты порядка bootstrap/install/release и обязательной публикации artifact через `if: always()`.
 
 ## 0.24.1
 
