@@ -57,6 +57,9 @@
 - CI создаёт bootstrap `release-check.json` до setup Python и установки зависимостей, поэтому artifact сохраняется даже при раннем падении workflow.
 - Добавлен ручной запуск `workflow_dispatch` для повторяемой release verification без нового commit.
 - Добавлены статические тесты порядка bootstrap/install/release и обязательной публикации artifact через `if: always()`.
+- Workflow получил явные разрешения `contents: read` и `statuses: write`.
+- После каждого запуска публикуется commit status `autopassport/release-check`: `success` только при `passed=true` и пустом `failed_steps`, иначе `failure` со ссылкой на workflow run.
+- Добавлены тесты commit-status context, permissions, failure fallback и ограничения description.
 
 ## 0.24.1
 
