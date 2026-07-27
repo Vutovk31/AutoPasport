@@ -63,3 +63,11 @@ Web/PWA-клиент отображает абсолютные значения,
 ## ADR-083 — Expired and revoked links do not consume quota
 
 Квота учитывает только ссылки без `revoked_at` и с `expires_at` позже текущего времени. Исторические записи остаются в базе для аудита, но не блокируют создание новой временной ссылки.
+
+## ADR-084 — Public share usage is visible before mutation
+
+Owner UI показывает активные ссылки, общий лимит и остаток через `GET /api/me/shares` до создания новой ссылки. Пользователь не должен узнавать о лимите только из отказа mutation endpoint.
+
+## ADR-085 — Share usage refreshes after every create attempt
+
+После успешной и неуспешной попытки создания ссылки frontend повторно загружает owner-wide usage. Это устраняет расхождение карточки с backend после автоматического отзыва предыдущей ссылки или quota error; отдельный realtime-канал для MVP не вводится.
