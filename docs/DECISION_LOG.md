@@ -71,3 +71,11 @@ Owner UI показывает активные ссылки, общий лими
 ## ADR-085 — Share usage refreshes after every create attempt
 
 После успешной и неуспешной попытки создания ссылки frontend повторно загружает owner-wide usage. Это устраняет расхождение карточки с backend после автоматического отзыва предыдущей ссылки или quota error; отдельный realtime-канал для MVP не вводится.
+
+## ADR-086 — Active share list never returns public tokens
+
+`GET /api/me/shares/list` возвращает идентификатор записи, автомобиль и временные метаданные, но не исходный token и не публичный URL. Token хранится только в виде hash, поэтому существующая публичная ссылка не может быть восстановлена из базы или owner list.
+
+## ADR-087 — Revoke reuses the existing ownership-checked mutation
+
+Owner UI отзывает ссылку через существующий `DELETE /api/share/{share_id}`. Новый параллельный revoke endpoint не создаётся: текущий маршрут уже требует mutation guard, CSRF token и проверяет принадлежность автомобиля текущему владельцу.
