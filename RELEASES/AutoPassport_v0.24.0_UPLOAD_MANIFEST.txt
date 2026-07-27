@@ -1,0 +1,12 @@
+AutoPassport v0.24.0 Restore Hardening
+File: AutoPassport_v0.24.0_Restore_Hardening.zip
+Size: 1000625 bytes
+SHA-256: a3ef08ff3bbd3cf5bd53d80244d3a06e798e763f8eb0dbebae86a8654f7453f3
+
+Verification:
+compile return code: 0
+pytest return code: 0
+pytest output: ...............                                                          [100%]
+15 passed in 16.30s
+
+Canonical next version after v0.23.0.
