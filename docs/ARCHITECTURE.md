@@ -140,3 +140,20 @@ scripts/cleanup_attachments.py
 ```
 
 Период задаётся `ATTACHMENT_RETENTION_DAYS`. Автоматический cleanup при старте приложения запрещён: операция запускается отдельно, сначала в dry-run. Пропавший активный файл, symlink, небезопасный `stored_name`, soft-delete без `deleted_at` или повторное появление уже purged-файла блокируют применение целиком. Историческая строка Attachment сохраняется в SQLite, а физическое удаление фиксируется полями `purged_at` и `purge_reason`.
+
+## Release verification boundary
+
+```text
+scripts/release_check.py
+→ repository privacy
+→ runtime configuration
+→ Alembic head
+→ Python compilation
+→ complete pytest suite
+→ restore and retention CLI imports
+→ Docker Compose validation
+→ JSON release report
+→ CI artifact retained for inspection
+```
+
+Release candidate принимается только при успешном завершении всех шагов одного запуска. Проверки не останавливаются после первой ошибки, поэтому JSON-отчёт содержит полный список дефектов. GitHub Actions публикует отчёт через `if: always()`, включая упавшие сборки; номер версии повышается отдельно только после подтверждённого успешного отчёта.
