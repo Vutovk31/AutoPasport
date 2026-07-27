@@ -87,3 +87,11 @@ Owner UI отзывает ссылку через существующий `DELE
 ## ADR-089 — Retention cleanup fails closed on integrity anomalies
 
 Apply не выполняет частичную очистку, если найден пропавший активный файл, symlink, небезопасный путь, soft-deleted запись без `deleted_at` или физический файл для записи, уже отмеченной как purged. Активные файлы защищаются независимо от возраста. Удаляются только повторно проверенные старые soft-deleted файлы и старые orphan-файлы; результат физического удаления фиксируется в SQLite и атомарном JSON audit report.
+
+## ADR-090 — Release verification is one auditable operation
+
+Release candidate проверяется командой `scripts/release_check.py`, которая запускает privacy, runtime configuration, Alembic head, compilation, полный pytest, restore CLI, retention CLI и Docker Compose для одного checkout. Отдельные частичные проверки не являются основанием для повышения версии.
+
+## ADR-091 — Failed CI must still publish its report
+
+GitHub Actions сохраняет JSON release report через `if: always()`. Отчёт должен быть доступен и при падении, иначе невозможно отличить дефект тестов от отсутствия observability. `VERSION` повышается только после успешного отчёта без `failed_steps`.
