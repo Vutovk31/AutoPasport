@@ -156,9 +156,12 @@ workflow checkout
 → restore and retention CLI imports
 → Docker Compose validation
 → final JSON release report
+→ explicit commit status autopassport/release-check
 → artifact retained for inspection with if: always()
 ```
 
 Release candidate принимается только при успешном завершении всех шагов одного запуска. Проверки не останавливаются после первой ошибки, поэтому итоговый JSON-отчёт содержит полный список дефектов. До запуска orchestrator workflow создаёт bootstrap-report со статусом `passed=false`. Если setup Python, установка зависимостей или сам runner завершаются раньше финальной записи, artifact всё равно содержит диагностируемый признак `workflow_before_release_runner`, а не отсутствующий файл.
 
 Каждый шаг release runner имеет явный timeout. Отсутствующая executable, системная ошибка запуска или превышение timeout преобразуются в ordinary failed result с кодом 127 или 124, а не прерывают orchestrator исключением. Полноценный runner атомарно заменяет bootstrap-report после начала проверки.
+
+GitHub Actions check runs и legacy commit statuses являются разными каналами наблюдаемости. Workflow поэтому явно публикует status context `autopassport/release-check` со значением `success` только при `passed=true` и пустом `failed_steps`; во всех остальных случаях публикуется `failure` со ссылкой на конкретный workflow run. Это делает результат доступным через Commit Status API и не заменяет JSON artifact как источник детальной диагностики.
