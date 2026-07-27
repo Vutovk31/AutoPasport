@@ -149,5 +149,5 @@ def test_restored_database_can_boot_ready_endpoint(tmp_path, monkeypatch):
         sys.modules.pop(m, None)
     import app.main as restored_main
     with TestClient(restored_main.app) as restored_client:
-        assert restored_client.get('/health').json()['version'] == '0.24.0'
+        assert restored_client.get('/health').json()['version'] == '0.25.0'
         assert restored_client.get('/ready').status_code == 200

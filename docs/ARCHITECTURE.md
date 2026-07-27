@@ -37,7 +37,7 @@ push / pull request
 → runtime configuration and tests
 ```
 
-Проверка выполняется до миграций и тестов. Публичный репозиторий не должен содержать `.env`, рабочую SQLite-базу, приватные vehicle-файлы, ключи, токены или реальный VIN вне явно разрешённых синтетических шаблонов.
+Проверка выполняется до миграций и тестов. Публичный репозиторий не должен содержать `.env`, рабочую SQLite-базу, приватные vehicle-файлы, ключи, токены или строки, соответствующие VIN-паттерну. Test/seed fixtures используют явно демонстрационные идентификаторы, поэтому path allowlist для VIN отсутствует.
 
 ## Owner storage quota boundary
 
@@ -165,3 +165,17 @@ Release candidate принимается только при успешном з
 Каждый шаг release runner имеет явный timeout. Отсутствующая executable, системная ошибка запуска или превышение timeout преобразуются в ordinary failed result с кодом 127 или 124, а не прерывают orchestrator исключением. Полноценный runner атомарно заменяет bootstrap-report после начала проверки.
 
 GitHub Actions check runs и legacy commit statuses являются разными каналами наблюдаемости. Workflow поэтому явно публикует status context `autopassport/release-check` со значением `success` только при `passed=true` и пустом `failed_steps`; во всех остальных случаях публикуется `failure` со ссылкой на конкретный workflow run. Это делает результат доступным через Commit Status API и не заменяет JSON artifact как источник детальной диагностики.
+
+## Release version boundary
+
+```text
+VERSION
+→ app/main.py APP_VERSION
+→ FastAPI app.version
+→ GET /health
+→ release tests
+→ README / changelog
+→ PWA cache generation identifier
+```
+
+`VERSION` является каноническим номером релиза. Composition root читает его при импорте, блокирует пустое значение, задаёт OpenAPI metadata и заменяет legacy `/health` route единым endpoint с тем же номером. Релизный тест требует совпадения runtime response, FastAPI metadata и файла `VERSION`; PWA cache identifier меняется при выпуске, чтобы установленный клиент получил новый application shell.

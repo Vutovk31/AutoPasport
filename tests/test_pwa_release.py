@@ -59,7 +59,7 @@ def test_pwa_routes_and_private_cache_policy(tmp_path, monkeypatch):
     assert len(body["icons"]) >= 2
 
     assert worker.status_code == 200
-    assert "autopassport-shell-v0.25.0-rc1" in worker.text
+    assert "autopassport-shell-v0.25.0" in worker.text
     assert "pathname.startsWith('/api/')" in worker.text
     assert "pathname.endsWith('/pdf')" in worker.text
     assert "pathname.startsWith('/storage/')" in worker.text
@@ -93,6 +93,7 @@ def test_release_files_exist_and_are_consistent():
 def test_version_consistency(tmp_path, monkeypatch):
     main = prepare_app(tmp_path, monkeypatch)
     with TestClient(main.app) as client:
-        assert client.get("/health").json()["version"] == "0.24.0"
+        assert client.get("/health").json()["version"] == "0.25.0"
         assert client.get("/ready").status_code == 200
-    assert Path("VERSION").read_text(encoding="utf-8").strip() == "0.24.0"
+    assert main.app.version == "0.25.0"
+    assert Path("VERSION").read_text(encoding="utf-8").strip() == "0.25.0"

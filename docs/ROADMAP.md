@@ -23,10 +23,14 @@
 - Release runner защищён от отсутствующей executable, системных ошибок запуска и зависших команд; отчёт продолжает формироваться с кодами 127/124.
 - CI создаёт bootstrap release report до установки зависимостей и поддерживает ручной `workflow_dispatch`.
 - CI публикует явный commit status `autopassport/release-check`, доступный через Commit Status API независимо от обычных GitHub Actions check runs.
+- Устранена утечка test application state между SQLite-базами и storage-каталогами.
+- Удалён VIN privacy allowlist; публичные fixtures используют только демонстрационные идентификаторы.
+- Получен первый полностью зелёный release-check на `main`: 8/8 gates и 70 тестов.
+- Подготовлена релизная версия `0.25.0` с единым runtime, OpenAPI и PWA version metadata.
 
 ## Следующий приоритет
 
-- Получить первый явный commit status нового workflow и определить `success` либо первый подтверждённый failed step.
-- При failure получить JSON artifact и исправить фактические `failed_steps` до полностью зелёного результата.
-- После подтверждения повысить `VERSION` до `0.25.0` и сформировать release snapshot.
-- Затем реализовать retention cleanup исторических истёкших ShareLink после периода аудита.
+- Подтвердить зелёный release-check версии `0.25.0` после merge в `main`.
+- Зафиксировать итоговый commit SHA и SHA-256 release artifact как доказательство первого MVP-релиза.
+- Выполнить controlled local/Docker smoke test: регистрация → автомобиль → визит → вложение → публичная ссылка → PDF → backup/restore.
+- После завершения release freeze перейти к retention cleanup исторических истёкших ShareLink и maintenance runner.

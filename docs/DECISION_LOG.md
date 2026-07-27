@@ -18,11 +18,11 @@
 
 ## ADR-072 — Public repository privacy fails closed
 
-Публичный GitHub рассматривается как недоверенная граница публикации. CI должен остановиться до миграций и тестов, если обнаружены приватные runtime-файлы, credential containers, известные форматы секретов или возможный реальный VIN вне узкого allowlist синтетических шаблонов.
+Публичный GitHub рассматривается как недоверенная граница публикации. CI должен остановиться до миграций и тестов, если обнаружены приватные runtime-файлы, credential containers, известные форматы секретов или строка, соответствующая VIN-паттерну.
 
-## ADR-073 — Privacy allowlist is explicit and minimal
+## ADR-073 — Privacy VIN allowlist is retired
 
-Исключения для VIN-проверки разрешаются только по точному пути для тестовых и шаблонных данных. Общие каталоги и произвольные файлы не исключаются из проверки.
+Первоначальное решение о path allowlist синтетических VIN отменено перед `v0.25.0`. Публичные fixtures обязаны использовать демонстрационные идентификаторы, не соответствующие VIN-паттерну; исключения по пути запрещены. Это исключает ситуацию, когда реальное значение случайно попадает в ранее разрешённый файл.
 
 ## ADR-074 — Storage quota is owner-wide
 
@@ -111,3 +111,11 @@ Workflow сохраняет автоматические trigger-ы push и pull
 ## ADR-095 — Release result is published through Commit Status API
 
 GitHub Actions check runs и commit statuses рассматриваются как разные интерфейсы. Workflow обязан дополнительно публиковать context `autopassport/release-check` через Commit Status API. `success` разрешён только при финальном JSON report с `passed=true` и пустым `failed_steps`; любой bootstrap, отсутствующий отчёт или failed step публикуются как `failure`. Детальная диагностика остаётся в JSON artifact, а status используется как компактный проверяемый release signal для конкретного commit SHA.
+
+## ADR-096 — Version is canonical runtime metadata
+
+Файл `VERSION` является источником номера релиза. Composition root считывает его при импорте, задаёт `FastAPI.app.version` и единый `/health`. Пустой файл блокирует импорт. Тесты требуют совпадения runtime, OpenAPI metadata и файла; ручное дублирование номера в endpoint запрещено.
+
+## ADR-097 — v0.25.0 is the first release after a green unified gate
+
+Повышение версии разрешено только после подтверждённого `main` artifact с `passed=true`, пустым `failed_steps`, восемью успешными gates и полным pytest. Release branch также обязана пройти тот же gate, после чего merge commit повторно проверяется на `main`; зелёный PR без зелёного merge commit недостаточен для окончательного объявления релиза.
