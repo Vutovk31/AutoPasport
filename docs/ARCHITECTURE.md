@@ -44,6 +44,7 @@ push / pull request
 ```text
 new Attachment
 → resolve owner through HistoryEvent or ServiceVisit
+→ storage_usage_for_owner
 → collect active attachments across all owner vehicles
 → check MAX_OWNER_ATTACHMENTS
 → check projected MAX_OWNER_STORAGE_BYTES
@@ -51,3 +52,16 @@ new Attachment
 ```
 
 Лимит применяется на уровне SQLAlchemy `before_insert`, поэтому одинаково защищает вложения старых событий и сервисных визитов. Soft-deleted вложения не потребляют квоту. Проверка выполняется до записи строки Attachment; физический файл удаляется существующим rollback-контуром upload endpoint при исключении.
+
+## Storage usage read model
+
+```text
+authenticated owner
+→ owner_storage_usage(session, owner_id)
+→ active event + visit attachments across all vehicles
+→ used / maximum / remaining
+→ attachment and byte utilization percent
+→ API payload
+```
+
+Расчёт квоты и read model используют одну функцию `storage_usage_for_owner`, чтобы UI и enforcement не расходились по правилам подсчёта. Следующий слой — подключение сервиса к `GET /api/me/storage`.
