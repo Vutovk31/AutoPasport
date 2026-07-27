@@ -95,3 +95,7 @@ Release candidate проверяется командой `scripts/release_check
 ## ADR-091 — Failed CI must still publish its report
 
 GitHub Actions сохраняет JSON release report через `if: always()`. Отчёт должен быть доступен и при падении, иначе невозможно отличить дефект тестов от отсутствия observability. `VERSION` повышается только после успешного отчёта без `failed_steps`.
+
+## ADR-092 — Release step infrastructure failures are data, not orchestrator crashes
+
+Отсутствующая executable, `OSError` запуска или timeout отдельного release step не должны выбрасывать исключение наружу и предотвращать JSON report. Runner преобразует такие ситуации в failed result с кодами 127 или 124, сохраняет доступную диагностику и продолжает остальные независимые проверки. Исключение составляет только авария самого Python-процесса или невозможность записать отчёт.
