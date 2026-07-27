@@ -73,11 +73,53 @@ function renderShares(usage) {
     : 'Использовано не менее 80% лимита публичных ссылок.';
 }
 
+function formatRemaining(seconds) {
+  const value = Math.max(0, Number(seconds || 0));
+  const minutes = Math.ceil(value / 60);
+  if (minutes < 60) return `${minutes} мин.`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `${hours} ч ${rest} мин.` : `${hours} ч`;
+}
+
+function renderActiveShareLinks(payload) {
+  const links = payload.links || [];
+  const container = $('#activeShareList');
+  if (!links.length) {
+    container.innerHTML = '<p>Активных публичных ссылок нет.</p>';
+    return;
+  }
+  container.innerHTML = links.map(link => {
+    const vehicle = link.vehicle || {};
+    const name = `${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.year || ''}`.trim();
+    const plate = vehicle.registration_number ? ` · ${vehicle.registration_number}` : '';
+    return `<article class="share-item"><div><strong>${name}</strong><small>${plate} · осталось ${formatRemaining(link.seconds_remaining)}</small></div><button type="button" class="revoke-share secondary" data-id="${link.id}">Отозвать</button></article>`;
+  }).join('');
+  document.querySelectorAll('.revoke-share').forEach(button => {
+    button.onclick = async () => {
+      button.disabled = true;
+      try {
+        await api(`/api/share/${button.dataset.id}`, { method: 'DELETE' });
+        await refreshShares();
+      } catch (error) {
+        alert(error.message);
+        button.disabled = false;
+      }
+    };
+  });
+}
+
 async function refreshShares() {
   try {
-    renderShares(await api('/api/me/shares'));
+    const [usage, list] = await Promise.all([
+      api('/api/me/shares'),
+      api('/api/me/shares/list'),
+    ]);
+    renderShares(usage);
+    renderActiveShareLinks(list);
   } catch (error) {
     $('#shareSummary').textContent = `Не удалось получить данные: ${error.message}`;
+    $('#activeShareList').innerHTML = '<p>Список ссылок недоступен.</p>';
   }
 }
 
