@@ -18,7 +18,13 @@ class StorageUsage:
     max_attachments: int
     max_bytes: int
 
-    def as_dict(self) -> dict[str, int]:
+    @staticmethod
+    def _percent(used: int, maximum: int) -> float:
+        if maximum <= 0:
+            return 0.0
+        return round(min(max(used / maximum * 100, 0.0), 100.0), 2)
+
+    def as_dict(self) -> dict[str, int | float]:
         return {
             "attachments": self.attachments,
             "bytes_used": self.bytes_used,
@@ -26,6 +32,8 @@ class StorageUsage:
             "max_bytes": self.max_bytes,
             "attachments_remaining": max(self.max_attachments - self.attachments, 0),
             "bytes_remaining": max(self.max_bytes - self.bytes_used, 0),
+            "attachments_percent": self._percent(self.attachments, self.max_attachments),
+            "bytes_percent": self._percent(self.bytes_used, self.max_bytes),
         }
 
 
@@ -45,6 +53,46 @@ def quota_limits() -> tuple[int, int]:
         _positive_limit("MAX_OWNER_ATTACHMENTS", DEFAULT_MAX_OWNER_ATTACHMENTS),
         _positive_limit("MAX_OWNER_STORAGE_BYTES", DEFAULT_MAX_OWNER_STORAGE_BYTES),
     )
+
+
+def storage_usage_for_owner(
+    connection,
+    owner_id: str,
+    *,
+    Attachment,
+    HistoryEvent,
+    ServiceVisit,
+    Vehicle,
+) -> StorageUsage:
+    """Return owner-wide active attachment usage for API and enforcement code."""
+    max_attachments, max_bytes = quota_limits()
+    vehicle_ids = select(Vehicle.id).where(Vehicle.owner_id == owner_id)
+    event_ids = select(HistoryEvent.id).where(HistoryEvent.vehicle_id.in_(vehicle_ids))
+    visit_ids = select(ServiceVisit.id).where(ServiceVisit.vehicle_id.in_(vehicle_ids))
+    statement = select(
+        func.count(Attachment.id),
+        func.coalesce(func.sum(Attachment.size_bytes), 0),
+    ).where(
+        Attachment.is_deleted.is_(False),
+        or_(Attachment.event_id.in_(event_ids), Attachment.visit_id.in_(visit_ids)),
+    )
+    count, bytes_used = connection.execute(statement).one()
+    return StorageUsage(int(count or 0), int(bytes_used or 0), max_attachments, max_bytes)
+
+
+def owner_storage_usage(session, owner_id: str) -> dict[str, int | float]:
+    """Public application service used by the authenticated storage usage API."""
+    from .models import Attachment, HistoryEvent, ServiceVisit, Vehicle
+
+    usage = storage_usage_for_owner(
+        session,
+        owner_id,
+        Attachment=Attachment,
+        HistoryEvent=HistoryEvent,
+        ServiceVisit=ServiceVisit,
+        Vehicle=Vehicle,
+    )
+    return usage.as_dict()
 
 
 def register_storage_quota_listener(*, Attachment, HistoryEvent, ServiceVisit, Vehicle) -> None:
@@ -71,21 +119,6 @@ def register_storage_quota_listener(*, Attachment, HistoryEvent, ServiceVisit, V
             return None
         return connection.execute(statement).scalar_one_or_none()
 
-    def usage_for_owner(connection, owner_id: str) -> StorageUsage:
-        max_attachments, max_bytes = quota_limits()
-        vehicle_ids = select(Vehicle.id).where(Vehicle.owner_id == owner_id)
-        event_ids = select(HistoryEvent.id).where(HistoryEvent.vehicle_id.in_(vehicle_ids))
-        visit_ids = select(ServiceVisit.id).where(ServiceVisit.vehicle_id.in_(vehicle_ids))
-        statement = select(
-            func.count(Attachment.id),
-            func.coalesce(func.sum(Attachment.size_bytes), 0),
-        ).where(
-            Attachment.is_deleted.is_(False),
-            or_(Attachment.event_id.in_(event_ids), Attachment.visit_id.in_(visit_ids)),
-        )
-        count, bytes_used = connection.execute(statement).one()
-        return StorageUsage(int(count or 0), int(bytes_used or 0), max_attachments, max_bytes)
-
     def before_insert(_mapper, connection, target):
         owner_id = owner_id_for_target(connection, target)
         if owner_id is None:
@@ -94,7 +127,14 @@ def register_storage_quota_listener(*, Attachment, HistoryEvent, ServiceVisit, V
                 detail={"code": "attachment_owner_unresolved", "message": "Attachment owner cannot be resolved"},
             )
 
-        usage = usage_for_owner(connection, owner_id)
+        usage = storage_usage_for_owner(
+            connection,
+            owner_id,
+            Attachment=Attachment,
+            HistoryEvent=HistoryEvent,
+            ServiceVisit=ServiceVisit,
+            Vehicle=Vehicle,
+        )
         if usage.attachments >= usage.max_attachments:
             raise HTTPException(
                 status_code=409,
