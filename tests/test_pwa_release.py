@@ -6,6 +6,19 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+APP_MODULES = [
+    "app.main",
+    "app.application",
+    "app.models",
+    "app.database",
+    "app.security",
+    "app.domain",
+    "app.pdf",
+    "app.backup",
+    "app.storage_quota",
+    "app.share_limits",
+]
+
 
 def prepare_app(tmp_path, monkeypatch):
     root = Path(__file__).resolve().parents[1]
@@ -33,7 +46,7 @@ def prepare_app(tmp_path, monkeypatch):
     )
     assert migration.returncode == 0, migration.stderr
 
-    for module in ["app.main", "app.application", "app.models", "app.database"]:
+    for module in APP_MODULES:
         sys.modules.pop(module, None)
     import app.main
     return app.main
@@ -76,16 +89,20 @@ def test_release_files_exist_and_are_consistent():
     assert (root / "docker-compose.yml").exists()
     assert (root / ".github/workflows/ci.yml").exists()
     assert (root / "docs/RELEASE_RUNBOOK.md").exists()
+    assert (root / "scripts/release_check.py").exists()
 
     dockerfile = (root / "Dockerfile").read_text(encoding="utf-8")
     compose = (root / "docker-compose.yml").read_text(encoding="utf-8")
     ci = (root / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    release_check = (root / "scripts/release_check.py").read_text(encoding="utf-8")
 
     assert "scripts/entrypoint.sh" in dockerfile
     assert "alembic upgrade head" in (root / "scripts/entrypoint.sh").read_text(encoding="utf-8")
     assert "/ready" in compose
-    assert "pytest -q" in ci
-    assert "docker compose config -q" in ci
+    assert "scripts/release_check.py" in ci
+    assert 'CheckStep("test_suite", (python, "-m", "pytest", "-q")' in release_check
+    assert 'CheckStep("docker_compose"' in release_check
+    assert '"docker", "compose"' in release_check
 
 
 def test_version_consistency(tmp_path, monkeypatch):
