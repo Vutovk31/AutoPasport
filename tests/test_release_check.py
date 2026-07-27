@@ -3,7 +3,14 @@ from __future__ import annotations
 import json
 import subprocess
 
-from scripts.release_check import CheckStep, build_steps, run_release_check, write_report
+from scripts.release_check import (
+    COMMAND_NOT_FOUND_RETURN_CODE,
+    COMMAND_TIMEOUT_RETURN_CODE,
+    CheckStep,
+    build_steps,
+    run_release_check,
+    write_report,
+)
 
 
 def completed(command, returncode=0, stdout="", stderr=""):
@@ -22,6 +29,7 @@ def test_build_steps_covers_release_gates():
         "retention_cli",
         "docker_compose",
     ]
+    assert all(step.timeout_seconds > 0 for step in build_steps())
 
 
 def test_skip_docker_removes_only_docker_step():
@@ -51,6 +59,49 @@ def test_release_report_passes_when_every_step_passes():
     assert report["passed"] is True
     assert report["failed_steps"] == []
     assert report["steps"][0]["passed"] is True
+
+
+def test_missing_command_is_recorded_and_later_steps_continue():
+    steps = [CheckStep("missing", ("missing",)), CheckStep("later", ("later",))]
+
+    def runner(command, **_kwargs):
+        if command[0] == "missing":
+            raise FileNotFoundError("missing executable")
+        return completed(command, stdout="continued")
+
+    report = run_release_check(steps=steps, runner=runner)
+
+    assert report["failed_steps"] == ["missing"]
+    assert report["steps"][0]["returncode"] == COMMAND_NOT_FOUND_RETURN_CODE
+    assert "Command unavailable" in report["steps"][0]["stderr"]
+    assert report["steps"][1]["passed"] is True
+
+
+def test_timed_out_command_is_recorded_with_partial_output():
+    step = CheckStep("slow", ("slow",), timeout_seconds=7)
+
+    def runner(command, **_kwargs):
+        raise subprocess.TimeoutExpired(command, 7, output="partial output", stderr="partial error")
+
+    report = run_release_check(steps=[step], runner=runner)
+
+    result = report["steps"][0]
+    assert result["returncode"] == COMMAND_TIMEOUT_RETURN_CODE
+    assert result["stdout"] == "partial output"
+    assert "partial error" in result["stderr"]
+    assert "timed out after 7 seconds" in result["stderr"]
+
+
+def test_runner_receives_step_timeout():
+    captured = {}
+
+    def runner(command, **kwargs):
+        captured.update(kwargs)
+        return completed(command)
+
+    run_release_check(steps=[CheckStep("only", ("ok",), timeout_seconds=33)], runner=runner)
+
+    assert captured["timeout"] == 33
 
 
 def test_write_report_is_valid_json(tmp_path):
