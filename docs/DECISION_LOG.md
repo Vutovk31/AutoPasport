@@ -107,3 +107,7 @@ GitHub Actions сохраняет JSON release report через `if: always()`.
 ## ADR-094 — Release verification supports manual dispatch
 
 Workflow сохраняет автоматические trigger-ы push и pull request, но дополнительно поддерживает `workflow_dispatch`. Повторная проверка одного состояния репозитория не должна требовать фиктивного commit; ручной запуск используется для диагностики инфраструктурных сбоев и подтверждения release candidate.
+
+## ADR-095 — Release result is published through Commit Status API
+
+GitHub Actions check runs и commit statuses рассматриваются как разные интерфейсы. Workflow обязан дополнительно публиковать context `autopassport/release-check` через Commit Status API. `success` разрешён только при финальном JSON report с `passed=true` и пустым `failed_steps`; любой bootstrap, отсутствующий отчёт или failed step публикуются как `failure`. Детальная диагностика остаётся в JSON artifact, а status используется как компактный проверяемый release signal для конкретного commit SHA.
