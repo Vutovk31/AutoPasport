@@ -1,0 +1,23 @@
+services:
+  autopassport:
+    build: .
+    container_name: autopassport-mvp
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: sqlite:///./data/autopassport.db
+      STORAGE_PATH: ./data/storage
+      BACKUP_PATH: ./data/backups
+      PUBLIC_BASE_URL: http://127.0.0.1:8000
+    volumes:
+      - autopassport_data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  autopassport_data:

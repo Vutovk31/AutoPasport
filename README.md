@@ -1,31 +1,8 @@
-# AutoPassport
+# AutoPassport v0.23.0
 
-Канонический проект: электронный паспорт автомобиля с подтверждаемой историей обслуживания.
+Каноническая MVP-сборка с ремонтными визитами, позициями работ, динамической trust-моделью, временным публичным паспортом, PDF-отчётом и backup SQLite + storage.
 
-## Текущий канонический релиз
-
-```text
-AutoPassport_v0.24.0_Restore_Hardening.zip
-SHA-256: a3ef08ff3bbd3cf5bd53d80244d3a06e798e763f8eb0dbebae86a8654f7453f3
-Tests: 15 passed
-```
-
-## Состояние загрузки исходников
-
-Полный ZIP проекта физически создан в рабочей среде ChatGPT и доступен в артефактах текущего чата. Прямая массовая загрузка всего распакованного дерева в GitHub через доступный GitHub-коннектор ограничена: коннектор поддерживает создание отдельных текстовых файлов и Git tree/blob API, но не принимает локальный ZIP/папку как единый upload-артефакт.
-
-До ручной загрузки распакованного ZIP этот репозиторий используется как точка фиксации канонической версии, SHA-256 и дальнейшего перехода к GitHub-разработке.
-
-## Ручная загрузка
-
-1. Скачать `AutoPassport_v0.24.0_Restore_Hardening.zip` из текущего чата.
-2. Распаковать архив локально.
-3. Открыть репозиторий `Vutovk31/AutoPasport`.
-4. Нажать **Add file → Upload files**.
-5. Перетащить всё содержимое распакованной папки, не саму папку верхнего уровня.
-6. Commit message: `chore: import AutoPassport v0.24.0 canonical source`.
-
-## Проверка после загрузки
+## Локальный запуск
 
 ```bash
 python -m venv .venv
@@ -33,12 +10,73 @@ source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 alembic upgrade head
-pytest -q
 uvicorn app.main:app --reload
 ```
 
-Ожидаемый результат тестов:
+Открыть: `http://127.0.0.1:8000`
+
+## Тесты
+
+```bash
+pytest -q
+```
+
+## Backup
+
+В `.env` задайте:
 
 ```text
-15 passed
+ADMIN_BACKUP_TOKEN=change-me
+BACKUP_PATH=./data/backups
 ```
+
+Создать backup:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/admin/backups \
+  -H 'X-Admin-Token: change-me'
+```
+
+Backup включает SQLite-базу, storage-файлы и `manifest.json` с SHA-256.
+
+
+## PWA
+
+AutoPassport 0.23.0 includes an installable PWA shell:
+
+```text
+/manifest.webmanifest
+/service-worker.js
+/offline.html
+/static/icons/icon-192.png
+/static/icons/icon-512.png
+```
+
+The service worker caches only the application shell. API responses, PDFs and private vehicle data are intentionally network-only.
+
+## Docker release run
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+The container applies Alembic migrations on startup and exposes the app at http://127.0.0.1:8000.
+
+## CI
+
+GitHub Actions runs migrations, compiles Python modules, executes pytest and validates docker-compose syntax.
+
+## Verification note
+
+`pytest -q` does not require Docker. Docker Compose validation requires Docker to be installed locally or in CI.
+
+
+## Restore hardening
+
+```bash
+python scripts/restore_backup.py data/backups/<backup>.zip data/restored
+python scripts/restore_backup.py data/backups/<backup>.zip data/restored --verify-only
+```
+
+Restore checks archive paths, database SHA-256, storage SHA-256, SQLite integrity and required schema tables.
