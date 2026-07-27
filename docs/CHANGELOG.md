@@ -47,7 +47,10 @@
 - Старые soft-deleted файлы и старые orphan-файлы удаляются только после повторной проверки непосредственно перед unlink.
 - Каждый запуск формирует атомарный JSON audit report в `data/reports`.
 - Добавлены тесты dry-run, apply, защиты активного файла, orphan cleanup, missing active file и audit report.
-- CI проверяет импорт attachment retention CLI.
+- Добавлен `scripts/release_check.py`, объединяющий privacy, config, migrations, compilation, полный pytest, maintenance CLI и Docker Compose validation.
+- Release check формирует JSON-отчёт со всеми шагами и не скрывает дополнительные ошибки после первого сбоя.
+- GitHub Actions всегда публикует `autopassport-release-check` как artifact, включая неуспешные сборки.
+- Добавлены тесты состава release suite, skip-docker режима, агрегации ошибок и JSON report.
 
 ## 0.24.1
 
