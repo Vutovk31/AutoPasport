@@ -60,6 +60,9 @@
 - Workflow получил явные разрешения `contents: read` и `statuses: write`.
 - После каждого запуска публикуется commit status `autopassport/release-check`: `success` только при `passed=true` и пустом `failed_steps`, иначе `failure` со ссылкой на workflow run.
 - Добавлены тесты commit-status context, permissions, failure fallback и ограничения description.
+- Добавлена автоприменяемая test-fixture, полностью очищающая кэш модулей `app.*` и закрывающая старый SQLAlchemy engine между тестами.
+- Release-тесты синхронизированы с единым orchestrator `scripts/release_check.py` вместо устаревших прямых команд в workflow.
+- Docker Compose больше не требует существования локального `.env` для структурной валидации и использует безопасные переменные с defaults.
 
 ## 0.24.1
 
