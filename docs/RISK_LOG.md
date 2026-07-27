@@ -93,3 +93,13 @@
 Контроль: `scripts/cleanup_attachments.py` выполняет dry-run по умолчанию, сверяет все Attachment records с `STORAGE_PATH`, защищает активные файлы независимо от возраста, удаляет только старые soft-deleted и orphan-файлы, повторно проверяет eligibility перед unlink и записывает атомарный JSON audit report. Apply полностью блокируется при пропавшем активном файле, небезопасном пути, symlink, soft-delete без `deleted_at` или повторном появлении purged-файла. Успешное физическое удаление фиксируется `purged_at` и `purge_reason`.
 
 Остаточный риск: файловая операция и SQLite commit не являются одной атомарной транзакцией. При аварии между unlink и commit возможна запись `soft_deleted_file_missing` на следующем запуске; audit report и fail-closed scan позволяют обнаружить ситуацию, но не восстанавливают файл без backup.
+
+## R-034 — Релиз объявлен без единого проверяемого результата
+
+**Статус:** снижен release-check runner и CI artifact.
+
+Риск: отдельные CI-команды могут быть выполнены для разных состояний репозитория, а пустой commit status не позволяет доказать, что миграции, полный pytest, maintenance CLI и Docker validation прошли вместе.
+
+Контроль: `scripts/release_check.py` запускает восемь release gates последовательно для одного checkout, собирает коды возврата, длительность и ограниченный stdout/stderr каждого шага в JSON. GitHub Actions публикует отчёт `autopassport-release-check` при любом результате.
+
+Остаточный риск: до фактического получения успешного artifact текущая версия не считается release candidate; `VERSION` не повышается.
