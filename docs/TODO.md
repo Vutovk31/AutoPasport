@@ -2,9 +2,9 @@
 
 ## Критично
 
-- Получить JSON artifact `autopassport-release-check` для текущего commit SHA.
-- Проверить поле `status`: значение `bootstrap` означает сбой до запуска полноценного release runner.
-- При финальном отчёте разобрать только фактические `failed_steps` и исправить их до повышения версии.
+- Проверить commit status context `autopassport/release-check` для актуального commit SHA.
+- При `failure` получить JSON artifact `autopassport-release-check` и разобрать только фактические `failed_steps`.
+- При `success` зафиксировать конкретный commit SHA как release candidate и только после этого повышать версию.
 - Проверить production-пример конфигурации на реальном deployment target.
 - Сохранять allowlist privacy gate только для синтетических тестовых VIN и шаблонов; реальные данные не коммитить.
 - Перед первым production cleanup выполнить dry-run и сохранить JSON audit report вместе с backup.
