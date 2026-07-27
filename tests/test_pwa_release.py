@@ -33,7 +33,7 @@ def prepare_app(tmp_path, monkeypatch):
     )
     assert migration.returncode == 0, migration.stderr
 
-    for module in ["app.main", "app.models", "app.database"]:
+    for module in ["app.main", "app.application", "app.models", "app.database"]:
         sys.modules.pop(module, None)
     import app.main
     return app.main
@@ -46,10 +46,11 @@ def test_pwa_routes_and_private_cache_policy(tmp_path, monkeypatch):
         manifest = client.get("/manifest.webmanifest")
         worker = client.get("/service-worker.js")
         offline = client.get("/offline.html")
+        javascript = client.get("/static/main.js")
 
     assert page.status_code == 200
     assert 'rel="manifest"' in page.text
-    assert "serviceWorker.register('/service-worker.js')" in client.get("/static/main.js").text
+    assert "serviceWorker.register('/service-worker.js')" in javascript.text
 
     assert manifest.status_code == 200
     body = manifest.json()
@@ -58,7 +59,7 @@ def test_pwa_routes_and_private_cache_policy(tmp_path, monkeypatch):
     assert len(body["icons"]) >= 2
 
     assert worker.status_code == 200
-    assert "CACHE_NAME = 'autopassport-shell-v0.23.0'" in worker.text
+    assert "autopassport-shell-v0.25.0-rc1" in worker.text
     assert "pathname.startsWith('/api/')" in worker.text
     assert "pathname.endsWith('/pdf')" in worker.text
     assert "pathname.startsWith('/storage/')" in worker.text
