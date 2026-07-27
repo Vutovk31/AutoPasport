@@ -2,6 +2,9 @@ import os, subprocess, sys
 from pathlib import Path
 from fastapi.testclient import TestClient
 
+DEMO_VIN = "DEMO-VIN-00000001"
+
+
 def load_app(tmp_path, monkeypatch):
     root=Path(__file__).resolve().parents[1]
     if str(root) not in sys.path: sys.path.insert(0, str(root))
@@ -14,13 +17,16 @@ def load_app(tmp_path, monkeypatch):
     import app.main
     return app.main
 
+
 def csrf(c): return {"X-CSRF-Token":c.cookies.get("autopassport_csrf")}
 def register(c,email="owner@example.com"):
     r=c.post('/api/auth/register',data={'email':email,'password':'StrongPassword123'});assert r.status_code==201
 
+
 def create_vehicle(c):
-    r=c.post('/api/vehicles',headers=csrf(c),data={'vin':'JMZBK12Z270000001','registration_number':'А000АА00','make':'Mazda','model':'3 BK','trim':'рестайлинг','year':2006,'current_mileage':178711,'purchase_date':'2024-08-10','purchase_mileage':'156000'})
+    r=c.post('/api/vehicles',headers=csrf(c),data={'vin':DEMO_VIN,'registration_number':'А000АА00','make':'Mazda','model':'3 BK','trim':'рестайлинг','year':2006,'current_mileage':178711,'purchase_date':'2024-08-10','purchase_mileage':'156000'})
     assert r.status_code==201;return r.json()['id']
+
 
 def test_audit_soft_delete_and_odometer_protection(tmp_path,monkeypatch):
     main=load_app(tmp_path,monkeypatch)
@@ -35,6 +41,7 @@ def test_audit_soft_delete_and_odometer_protection(tmp_path,monkeypatch):
         detail=c.get(f'/api/vehicles/{vid}').json();assert detail['vehicle']['current_mileage']==178711 and detail['events']==[]
         audit=c.get(f'/api/events/{eid}/audit').json();assert audit[-1]['action']=='soft_deleted'
 
+
 def test_contextual_trust_and_public_share(tmp_path,monkeypatch):
     main=load_app(tmp_path,monkeypatch)
     with TestClient(main.app) as c:
@@ -45,16 +52,18 @@ def test_contextual_trust_and_public_share(tmp_path,monkeypatch):
         work=c.post(f'/api/events/{repair}/attachments',headers=csrf(c),data={'evidence_type':'work_order'},files={'file':('order.pdf',b'%PDF-1.4 DATA','application/pdf')})
         assert work.json()['trust_level']=='verified'
         share=c.post(f'/api/vehicles/{vid}/share',headers=csrf(c)).json();payload=c.get(share['url'].replace('http://testserver','') .replace('/p/','/api/public/')).json()
-        assert payload['vehicle']['vin']!='JMZBK12Z270000001'
+        assert payload['vehicle']['vin']!=DEMO_VIN
         assert payload['events'][0]['cost_rubles']==1500
         assert c.delete(f"/api/share/{share['id']}",headers=csrf(c)).status_code==204
         assert c.get(share['url'].replace('http://testserver','').replace('/p/','/api/public/')).status_code==404
+
 
 def test_readiness_and_frontend(tmp_path,monkeypatch):
     main=load_app(tmp_path,monkeypatch)
     with TestClient(main.app) as c:
         assert c.get('/ready').status_code==200
         page=c.get('/');assert page.status_code==200 and 'Ссылка на 1 час' in page.text
+
 
 def test_service_visit_items_cost_statuses_and_public_payload(tmp_path, monkeypatch):
     main = load_app(tmp_path, monkeypatch)
@@ -111,7 +120,7 @@ def test_service_visit_items_cost_statuses_and_public_payload(tmp_path, monkeypa
         public = c.get(share["url"].replace("http://testserver", "").replace("/p/", "/api/public/")).json()
         assert public["visits"][0]["total_cost_rubles"] == 25900
         assert any(i["cost_status"] == "included_in_visit" for i in public["visits"][0]["items"])
-        assert public["vehicle"]["vin"] != "JMZBK12Z270000001"
+        assert public["vehicle"]["vin"] != DEMO_VIN
 
 
 def test_service_visit_soft_delete_audit_and_no_odometer_rollback(tmp_path, monkeypatch):
