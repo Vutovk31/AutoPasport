@@ -79,3 +79,11 @@ Owner UI показывает активные ссылки, общий лими
 ## ADR-087 — Revoke reuses the existing ownership-checked mutation
 
 Owner UI отзывает ссылку через существующий `DELETE /api/share/{share_id}`. Новый параллельный revoke endpoint не создаётся: текущий маршрут уже требует mutation guard, CSRF token и проверяет принадлежность автомобиля текущему владельцу.
+
+## ADR-088 — Attachment retention is CLI-only and dry-run first
+
+Физическое удаление доказательств не предоставляется через HTTP API и не запускается автоматически при старте приложения. Оператор сначала выполняет `scripts/cleanup_attachments.py` без `--apply`, изучает JSON report и при необходимости создаёт backup. Это уменьшает риск случайной массовой очистки из owner UI, внешнего запроса или restart-контейнера.
+
+## ADR-089 — Retention cleanup fails closed on integrity anomalies
+
+Apply не выполняет частичную очистку, если найден пропавший активный файл, symlink, небезопасный путь, soft-deleted запись без `deleted_at` или физический файл для записи, уже отмеченной как purged. Активные файлы защищаются независимо от возраста. Удаляются только повторно проверенные старые soft-deleted файлы и старые orphan-файлы; результат физического удаления фиксируется в SQLite и атомарном JSON audit report.
