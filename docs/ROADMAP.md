@@ -21,10 +21,11 @@
 - Реализован attachment retention cleanup: dry-run, database/storage reconciliation, fail-closed integrity gate, физическое удаление старых soft-deleted и orphan-файлов, purge audit fields и JSON report.
 - Добавлен единый release verification runner и обязательный JSON artifact GitHub Actions.
 - Release runner защищён от отсутствующей executable, системных ошибок запуска и зависших команд; отчёт продолжает формироваться с кодами 127/124.
+- CI создаёт bootstrap release report до установки зависимостей и поддерживает ручной `workflow_dispatch`.
 
 ## Следующий приоритет
 
-- Получить и проверить фактический JSON artifact полного release check для текущего commit SHA.
-- Исправить все выявленные functional failed steps до полностью зелёного результата.
+- Получить artifact нового workflow и проверить, заменён ли bootstrap-report полноценным результатом runner-а.
+- Исправить фактические `failed_steps` до полностью зелёного результата.
 - После подтверждения повысить `VERSION` до `0.25.0` и сформировать release snapshot.
 - Затем реализовать retention cleanup исторических истёкших ShareLink после периода аудита.
