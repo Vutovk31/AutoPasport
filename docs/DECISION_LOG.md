@@ -31,3 +31,11 @@
 ## ADR-075 — Soft-deleted attachments release quota
 
 В MVP квоту потребляют только активные вложения. Soft-deleted записи не учитываются, поскольку недоступны владельцу как действующие доказательства; физическое удаление файла и политика retention остаются отдельным production-блоком.
+
+## ADR-076 — Storage enforcement and usage share one calculation
+
+Listener, backend read service и будущий API обязаны использовать `storage_usage_for_owner`. Отдельные SQL-запросы для отображения usage запрещены, поскольку создают риск расхождения лимитов, остатка и фактического enforcement.
+
+## ADR-077 — Usage percentages are derived server-side
+
+Backend возвращает проценты использования по количеству вложений и байтам вместе с абсолютными значениями. Это закрепляет единое округление и исключает различия между web/PWA-клиентами.
