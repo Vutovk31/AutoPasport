@@ -34,8 +34,16 @@
 
 ## ADR-076 — Storage enforcement and usage share one calculation
 
-Listener, backend read service и будущий API обязаны использовать `storage_usage_for_owner`. Отдельные SQL-запросы для отображения usage запрещены, поскольку создают риск расхождения лимитов, остатка и фактического enforcement.
+Listener, backend read service и API обязаны использовать `storage_usage_for_owner`. Отдельные SQL-запросы для отображения usage запрещены, поскольку создают риск расхождения лимитов, остатка и фактического enforcement.
 
 ## ADR-077 — Usage percentages are derived server-side
 
 Backend возвращает проценты использования по количеству вложений и байтам вместе с абсолютными значениями. Это закрепляет единое округление и исключает различия между web/PWA-клиентами.
+
+## ADR-078 — Storage usage endpoint is authenticated owner scope
+
+`GET /api/me/storage` использует `current_user` и возвращает только суммарное использование текущего владельца. Идентификатор владельца не принимается из URL или query-параметров, чтобы исключить горизонтальный доступ к чужой статистике.
+
+## ADR-079 — FastAPI main module is a composition root
+
+Существующие маршруты сохранены в `app/application.py`, а `app/main.py` отвечает за сборку приложения и подключение новых поперечных API. Это временно снижает риск дальнейшего роста монолитного файла без изменения внешней точки запуска `uvicorn app.main:app`.
