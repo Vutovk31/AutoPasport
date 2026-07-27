@@ -40,6 +40,14 @@
 - Owner UI показывает конкретные активные ссылки и позволяет отозвать их через существующий `DELETE /api/share/{share_id}`.
 - После отзыва список и агрегированное usage обновляются одним frontend-сценарием.
 - Добавлены тесты read model, маршрутов и revoke UI.
+- Добавлен `app/attachment_retention.py` для сверки SQLite и physical storage.
+- Добавлен CLI `python scripts/cleanup_attachments.py`; dry-run используется по умолчанию, физическое удаление требует `--apply`.
+- Добавлена миграция `0003_attachment_retention` с полями `purged_at` и `purge_reason`.
+- Cleanup блокирует apply при пропавшем активном файле, небезопасном пути, symlink или неконсистентном soft-delete.
+- Старые soft-deleted файлы и старые orphan-файлы удаляются только после повторной проверки непосредственно перед unlink.
+- Каждый запуск формирует атомарный JSON audit report в `data/reports`.
+- Добавлены тесты dry-run, apply, защиты активного файла, orphan cleanup, missing active file и audit report.
+- CI проверяет импорт attachment retention CLI.
 
 ## 0.24.1
 
