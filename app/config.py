@@ -20,6 +20,8 @@ class RuntimeConfig:
     admin_backup_token: str
     cookie_secure: bool
     max_upload_bytes: int
+    max_owner_attachments: int
+    max_owner_storage_bytes: int
 
     @property
     def is_production(self) -> bool:
@@ -51,6 +53,8 @@ def load_runtime_config() -> RuntimeConfig:
         admin_backup_token=os.getenv("ADMIN_BACKUP_TOKEN", "").strip(),
         cookie_secure=os.getenv("COOKIE_SECURE", "false").strip().lower() == "true",
         max_upload_bytes=_required_int("MAX_UPLOAD_BYTES", 5 * 1024 * 1024),
+        max_owner_attachments=_required_int("MAX_OWNER_ATTACHMENTS", 100),
+        max_owner_storage_bytes=_required_int("MAX_OWNER_STORAGE_BYTES", 250 * 1024 * 1024),
     )
 
 
@@ -71,6 +75,12 @@ def validate_runtime_config(config: RuntimeConfig) -> list[str]:
 
     if config.max_upload_bytes > 25 * 1024 * 1024:
         errors.append("MAX_UPLOAD_BYTES must not exceed 25 MiB in MVP")
+    if config.max_owner_attachments > 1000:
+        errors.append("MAX_OWNER_ATTACHMENTS must not exceed 1000 in MVP")
+    if config.max_owner_storage_bytes > 5 * 1024 * 1024 * 1024:
+        errors.append("MAX_OWNER_STORAGE_BYTES must not exceed 5 GiB in MVP")
+    if config.max_owner_storage_bytes < config.max_upload_bytes:
+        errors.append("MAX_OWNER_STORAGE_BYTES must be at least MAX_UPLOAD_BYTES")
 
     if config.is_production:
         if not config.public_base_url.startswith("https://"):
