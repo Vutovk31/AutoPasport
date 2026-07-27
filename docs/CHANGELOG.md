@@ -51,6 +51,9 @@
 - Release check формирует JSON-отчёт со всеми шагами и не скрывает дополнительные ошибки после первого сбоя.
 - GitHub Actions всегда публикует `autopassport-release-check` как artifact, включая неуспешные сборки.
 - Добавлены тесты состава release suite, skip-docker режима, агрегации ошибок и JSON report.
+- Release runner теперь преобразует отсутствующую executable и системную ошибку запуска в failed step с кодом 127.
+- Для каждого release step добавлен явный timeout; превышение фиксируется кодом 124 с сохранением доступного stdout/stderr.
+- Добавлены тесты продолжения release-check после отсутствующей команды, timeout diagnostics и передачи лимита времени runner-у.
 
 ## 0.24.1
 
