@@ -80,12 +80,14 @@ def test_release_files_exist_and_are_consistent():
     dockerfile = (root / "Dockerfile").read_text(encoding="utf-8")
     compose = (root / "docker-compose.yml").read_text(encoding="utf-8")
     ci = (root / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    release_check = (root / "scripts/release_check.py").read_text(encoding="utf-8")
 
     assert "scripts/entrypoint.sh" in dockerfile
     assert "alembic upgrade head" in (root / "scripts/entrypoint.sh").read_text(encoding="utf-8")
     assert "/ready" in compose
-    assert "pytest -q" in ci
-    assert "docker compose config -q" in ci
+    assert "scripts/release_check.py" in ci
+    assert '"-m", "pytest", "-q"' in release_check
+    assert '"docker", "compose"' in release_check
 
 
 def test_version_consistency(tmp_path, monkeypatch):
