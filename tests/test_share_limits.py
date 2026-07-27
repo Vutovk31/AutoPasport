@@ -9,6 +9,8 @@ from app.database import Base
 from app.models import ShareLink, User, Vehicle
 from app.share_limits import ShareQuotaExceeded, owner_share_usage
 
+DEMO_VIN = "DEMO-VIN-00000001"
+
 
 def _session(tmp_path):
     engine = create_engine(f"sqlite:///{tmp_path/'shares.db'}", connect_args={"check_same_thread": False})
@@ -19,7 +21,7 @@ def _session(tmp_path):
 def _owner_with_vehicle(session):
     owner = User(email="owner@example.test", password_hash="x")
     session.add(owner); session.flush()
-    vehicle = Vehicle(owner_id=owner.id, vin="JMZBK12Z270000001", make="Mazda", model="3", year=2006, current_mileage=100000)
+    vehicle = Vehicle(owner_id=owner.id, vin=DEMO_VIN, make="Mazda", model="3", year=2006, current_mileage=100000)
     session.add(vehicle); session.commit()
     return owner, vehicle
 
@@ -59,7 +61,9 @@ def test_share_usage_endpoint_requires_authentication():
 
 def test_share_quota_exception_has_structured_api_payload():
     from app.main import app
+    from app.share_limits import ShareQuotaExceeded as RuntimeShareQuotaExceeded
+
     route = next(r for r in app.routes if getattr(r, "path", None) == "/api/me/shares")
     assert "account" in route.tags
-    handler = app.exception_handlers[ShareQuotaExceeded]
+    handler = app.exception_handlers[RuntimeShareQuotaExceeded]
     assert handler is not None

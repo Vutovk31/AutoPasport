@@ -11,6 +11,8 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 import pytest
 
+DEMO_VIN = "DEMO-VIN-00000001"
+
 
 def load_app(tmp_path, monkeypatch):
     root = Path(__file__).resolve().parents[1]
@@ -48,7 +50,7 @@ def create_restorable_backup(c):
     r = c.post('/api/auth/register', data={'email':'owner@example.com', 'password':'StrongPassword123'})
     assert r.status_code == 201
     vehicle = c.post('/api/vehicles', headers=csrf(c), data={
-        'vin':'JMZBK12Z270000001', 'registration_number':'А000АА00', 'make':'Mazda', 'model':'3 BK',
+        'vin':DEMO_VIN, 'registration_number':'А000АА00', 'make':'Mazda', 'model':'3 BK',
         'trim':'рестайлинг', 'year':2006, 'current_mileage':178711, 'purchase_date':'2024-08-10', 'purchase_mileage':'156000'
     })
     assert vehicle.status_code == 201, vehicle.text

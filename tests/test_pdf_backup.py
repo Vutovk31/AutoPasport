@@ -5,6 +5,8 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 from pypdf import PdfReader
 
+DEMO_VIN = "DEMO-VIN-00000001"
+
 
 def load_app(tmp_path, monkeypatch):
     root = Path(__file__).resolve().parents[1]
@@ -45,7 +47,7 @@ def register(c):
 
 def create_vehicle(c):
     r = c.post('/api/vehicles', headers=csrf(c), data={
-        'vin':'JMZBK12Z270000001', 'registration_number':'А000АА00', 'make':'Mazda', 'model':'3 BK',
+        'vin':DEMO_VIN, 'registration_number':'А000АА00', 'make':'Mazda', 'model':'3 BK',
         'trim':'рестайлинг', 'year':2006, 'current_mileage':178711, 'purchase_date':'2024-08-10', 'purchase_mileage':'156000'
     })
     assert r.status_code == 201, r.text
@@ -94,7 +96,7 @@ def test_owner_and_public_pdf(tmp_path, monkeypatch):
         owner_text = pdf_text(owner_pdf.content)
         assert 'AutoPassport' in owner_text
         assert 'Mazda' in owner_text
-        assert 'JMZBK12Z270000001' in owner_text
+        assert DEMO_VIN in owner_text
 
         share = c.post(f'/api/vehicles/{vid}/share', headers=csrf(c)).json()
         token = share['url'].rsplit('/', 1)[-1]
@@ -102,8 +104,8 @@ def test_owner_and_public_pdf(tmp_path, monkeypatch):
         assert public_pdf.status_code == 200
         public_text = pdf_text(public_pdf.content)
         assert 'AutoPassport' in public_text
-        assert 'JMZBK12Z270000001' not in public_text
-        assert 'JMZBK' in public_text
+        assert DEMO_VIN not in public_text
+        assert 'DEMO-' in public_text
         assert '25 900' in public_text
 
 

@@ -33,7 +33,7 @@ SECRET_PATTERNS = {
 }
 VIN_PATTERN = re.compile(r"\b[A-HJ-NPR-Z0-9]{17}\b")
 TEXT_SUFFIXES = {".py", ".md", ".txt", ".json", ".yml", ".yaml", ".toml", ".ini", ".html", ".js", ".css", ".sh", ""}
-VIN_ALLOWLIST_PATHS = {"sample_data/local_seed.example.json", "sample_data/private_vehicle.template.json", "tests/test_mvp.py"}
+VIN_ALLOWLIST_PATHS: set[str] = set()
 
 
 def scan_repository(root: Path) -> list[str]:

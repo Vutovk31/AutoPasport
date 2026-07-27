@@ -2,8 +2,8 @@
   "owner_email": "owner@example.com",
   "owner_password": "StrongPassword123",
   "vehicle": {
-    "vin": "JMZBK12Z270000001",
-    "registration_number": "A000AA00",
+    "vin": "DEMO-VIN-00000001",
+    "registration_number": "DEMO-PLATE",
     "make": "Mazda",
     "model": "3 BK",
     "trim": "рестайлинг",
@@ -126,5 +126,5 @@
       ]
     }
   ],
-  "note": "Пример использует синтетические VIN/госномер. Для личной локальной базы замените на реальные значения."
+  "note": "Публичный пример использует демонстрационные идентификаторы. Реальные VIN, госномер и документы должны храниться только в приватной локальной среде."
 }
