@@ -53,15 +53,16 @@ new Attachment
 
 Лимит применяется на уровне SQLAlchemy `before_insert`, поэтому одинаково защищает вложения старых событий и сервисных визитов. Soft-deleted вложения не потребляют квоту. Проверка выполняется до записи строки Attachment; физический файл удаляется существующим rollback-контуром upload endpoint при исключении.
 
-## Storage usage read model
+## Storage usage API boundary
 
 ```text
-authenticated owner
+authenticated GET /api/me/storage
+→ current_user
 → owner_storage_usage(session, owner_id)
+→ storage_usage_for_owner
 → active event + visit attachments across all vehicles
-→ used / maximum / remaining
-→ attachment and byte utilization percent
-→ API payload
+→ used / maximum / remaining / utilization percent
+→ stable JSON payload
 ```
 
-Расчёт квоты и read model используют одну функцию `storage_usage_for_owner`, чтобы UI и enforcement не расходились по правилам подсчёта. Следующий слой — подключение сервиса к `GET /api/me/storage`.
+Расчёт квоты и API используют одну функцию `storage_usage_for_owner`, поэтому frontend видит те же значения, которыми backend блокирует новые загрузки. `app/main.py` является composition root; существующее приложение сохранено в `app/application.py`, а новые поперечные API подключаются без дальнейшего разрастания монолитного файла.
