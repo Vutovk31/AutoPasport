@@ -112,4 +112,14 @@
 
 Контроль: каждый `CheckStep` имеет явный timeout. `FileNotFoundError` и другие `OSError` записываются как failed result с кодом 127; `TimeoutExpired` — с кодом 124 и доступным частичным stdout/stderr. Остальные шаги продолжают выполняться, после чего создаётся единый JSON report.
 
-Остаточный риск: аварийное завершение Python-процесса, нехватка диска или падение runner до вызова `scripts/release_check.py` по-прежнему могут исключить создание artifact.
+Остаточный риск: аварийное завершение Python-процесса или невозможность финальной записи могут оставить только bootstrap-report.
+
+## R-036 — CI падает до запуска release runner
+
+**Статус:** снижен bootstrap artifact.
+
+Риск: сбой `actions/setup-python`, установки зависимостей или раннего workflow step происходит до создания отчёта `scripts/release_check.py`. Ранее publish step с `if: always()` не имел файла для загрузки и observability терялась полностью.
+
+Контроль: сразу после checkout workflow создаёт валидный `data/reports/release-check.json` со статусом `bootstrap`, `passed=false` и failed step `workflow_before_release_runner`. Полный release runner заменяет этот файл; если ранний сбой сохраняется, artifact всё равно показывает точную границу отказа. Статические тесты проверяют порядок bootstrap → install → release и обязательную публикацию artifact.
+
+Остаточный риск: сбой checkout или самого artifact upload action остаётся вне контроля репозитория.
