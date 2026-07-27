@@ -2,19 +2,20 @@
 
 ## Критично
 
-- Получить зелёный результат основного CI после добавления configuration, repository privacy, storage quota, storage UI и public share gates.
+- Получить зелёный результат основного CI после добавления configuration, repository privacy, storage quota, storage UI, public share gates и attachment retention.
 - Проверить production-пример конфигурации на реальном deployment target.
 - Сохранять allowlist privacy gate только для синтетических тестовых VIN и шаблонов; реальные данные не коммитить.
+- Перед первым production cleanup выполнить dry-run и сохранить JSON audit report вместе с backup.
 
 ## Следующий функциональный блок
 
-- Реализовать retention cleanup физически удалённых вложений с dry-run и audit output.
-- Удалять только файлы, которые soft-deleted дольше установленного периода и больше не входят в активную историю.
-- Добавить тесты безопасного отказа при несоответствии database/storage.
+- Реализовать retention cleanup истёкших и отозванных ShareLink после установленного периода аудита.
+- Добавить maintenance runner, который запускает cleanup-команды отдельно от application startup.
+- Подтвердить, что backup после attachment cleanup не содержит physically purged файлов, а SQLite сохраняет purge audit metadata.
 
 ## После MVP security baseline
 
 - Полноценная административная роль вместо статического токена.
 - Внешний backup storage.
 - Production HTTPS deployment и мониторинг ошибок.
-- Retention cleanup исторических истёкших ShareLink после периода аудита.
+- Транзакционная защита quota при многопроцессном deployment.
