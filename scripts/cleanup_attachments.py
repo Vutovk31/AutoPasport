@@ -12,7 +12,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app.attachment_retention import run_attachment_retention
-from app.config import load_runtime_config
+from app.config import assert_runtime_config
 from app.database import SessionLocal
 
 
@@ -37,9 +37,12 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
-    config = load_runtime_config()
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    config = assert_runtime_config()
     retention_days = args.retention_days or config.attachment_retention_days
+    if retention_days <= 0 or retention_days > 3650:
+        parser.error("retention days must be between 1 and 3650")
     storage_path = (args.storage_path or config.storage_path).expanduser().resolve()
     report_path = (args.report_path or _default_report_path()).expanduser().resolve()
 
