@@ -3,6 +3,7 @@
 ## Критично
 
 - Получить JSON artifact `autopassport-release-check` для текущего commit SHA и подтвердить все восемь шагов.
+- Разобрать только фактические functional failed steps: command-not-found и timeout теперь фиксируются в отчёте без потери observability.
 - Исправить любой failed step до повышения версии.
 - Проверить production-пример конфигурации на реальном deployment target.
 - Сохранять allowlist privacy gate только для синтетических тестовых VIN и шаблонов; реальные данные не коммитить.
