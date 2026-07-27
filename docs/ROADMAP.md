@@ -20,10 +20,11 @@
 - Добавлен явный отзыв активной ссылки из owner UI с последующим обновлением списка и usage.
 - Реализован attachment retention cleanup: dry-run, database/storage reconciliation, fail-closed integrity gate, физическое удаление старых soft-deleted и orphan-файлов, purge audit fields и JSON report.
 - Добавлен единый release verification runner и обязательный JSON artifact GitHub Actions.
+- Release runner защищён от отсутствующей executable, системных ошибок запуска и зависших команд; отчёт продолжает формироваться с кодами 127/124.
 
 ## Следующий приоритет
 
 - Получить и проверить фактический JSON artifact полного release check для текущего commit SHA.
-- Исправить все выявленные шаги до полностью зелёного результата.
+- Исправить все выявленные functional failed steps до полностью зелёного результата.
 - После подтверждения повысить `VERSION` до `0.25.0` и сформировать release snapshot.
 - Затем реализовать retention cleanup исторических истёкших ShareLink после периода аудита.
