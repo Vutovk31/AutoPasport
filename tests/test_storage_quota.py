@@ -9,6 +9,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
 from app.models import Attachment, HistoryEvent, ServiceVisit, User, Vehicle
+from app.storage_quota import owner_storage_usage
 
 
 def make_session():
@@ -129,3 +130,48 @@ def test_attachment_without_resolvable_owner_is_rejected(monkeypatch):
     assert exc.value.status_code == 409
     assert exc.value.detail["code"] == "attachment_owner_unresolved"
     session.rollback()
+
+
+def test_owner_storage_usage_returns_limits_remaining_and_percent(monkeypatch):
+    monkeypatch.setenv("MAX_OWNER_ATTACHMENTS", "4")
+    monkeypatch.setenv("MAX_OWNER_STORAGE_BYTES", "100")
+    session = make_session()
+    user, _, event, visit = seed_owner(session)
+
+    session.add_all([
+        attachment(event_id=event.id, name="one.pdf", size=10),
+        attachment(visit_id=visit.id, name="two.pdf", size=15),
+        attachment(event_id=event.id, name="deleted.pdf", size=90, deleted=True),
+    ])
+    session.commit()
+
+    usage = owner_storage_usage(session, user.id)
+
+    assert usage == {
+        "attachments": 2,
+        "bytes_used": 25,
+        "max_attachments": 4,
+        "max_bytes": 100,
+        "attachments_remaining": 2,
+        "bytes_remaining": 75,
+        "attachments_percent": 50.0,
+        "bytes_percent": 25.0,
+    }
+
+
+def test_owner_storage_usage_for_owner_without_vehicles_is_zero(monkeypatch):
+    monkeypatch.setenv("MAX_OWNER_ATTACHMENTS", "10")
+    monkeypatch.setenv("MAX_OWNER_STORAGE_BYTES", "1000")
+    session = make_session()
+    user = User(email="empty@example.test", password_hash="hash")
+    session.add(user)
+    session.commit()
+
+    usage = owner_storage_usage(session, user.id)
+
+    assert usage["attachments"] == 0
+    assert usage["bytes_used"] == 0
+    assert usage["attachments_remaining"] == 10
+    assert usage["bytes_remaining"] == 1000
+    assert usage["attachments_percent"] == 0.0
+    assert usage["bytes_percent"] == 0.0
