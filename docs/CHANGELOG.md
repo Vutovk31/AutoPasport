@@ -11,6 +11,11 @@
 - Добавлен `scripts/check_repository_privacy.py` для защиты публичного репозитория от приватных файлов, credential containers, секретов и возможных реальных VIN.
 - Добавлены тесты privacy gate.
 - Основной CI выполняет privacy gate до миграций и функциональных тестов.
+- Добавлен owner-wide storage quota для активных вложений событий и сервисных визитов.
+- Добавлены лимиты `MAX_OWNER_ATTACHMENTS` и `MAX_OWNER_STORAGE_BYTES`.
+- Превышение количества вложений возвращает `owner_attachment_quota_exceeded` с HTTP 409.
+- Превышение суммарного объёма возвращает `owner_storage_quota_exceeded` с HTTP 413.
+- Добавлены тесты количества, объёма, soft-delete и невозможности определить владельца вложения.
 
 ## 0.24.1
 
