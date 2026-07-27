@@ -25,19 +25,13 @@ jobs:
           python-version: '3.13'
       - name: Install dependencies
         run: python -m pip install -r requirements.txt
-      - name: Validate public repository privacy
-        run: python scripts/check_repository_privacy.py
-      - name: Validate runtime configuration
-        run: python scripts/check_config.py
-      - name: Run migrations
-        run: alembic upgrade head
-      - name: Compile Python
-        run: python -m compileall app scripts
-      - name: Run tests
-        run: pytest -q
-      - name: Validate restore CLI import
-        run: python scripts/restore_backup.py --help
-      - name: Validate attachment retention CLI import
-        run: python scripts/cleanup_attachments.py --help
-      - name: Validate Docker Compose
-        run: docker compose config -q
+      - name: Run complete release verification
+        run: python scripts/release_check.py --report-path data/reports/release-check.json
+      - name: Publish release verification report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: autopassport-release-check
+          path: data/reports/release-check.json
+          if-no-files-found: error
+          retention-days: 14
