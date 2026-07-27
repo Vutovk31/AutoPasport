@@ -1,0 +1,54 @@
+name: Repository integrity
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify-structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify required AutoPassport files
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            VERSION
+            requirements.txt
+            app/main.py
+            app/models.py
+            app/database.py
+            alembic.ini
+            alembic/env.py
+            scripts/entrypoint.sh
+            scripts/restore_backup.py
+            tests/test_mvp.py
+            docs/CHANGELOG.md
+            Dockerfile
+            docker-compose.yml
+          )
+          missing=0
+          for path in "${required[@]}"; do
+            if [[ ! -e "$path" ]]; then
+              echo "::error file=$path::Required project artifact is missing"
+              missing=1
+            fi
+          done
+          if [[ "$missing" -ne 0 ]]; then
+            echo "Repository is incomplete. Upload the full canonical source tree."
+            exit 1
+          fi
+          echo "Repository structure is complete."
+      - name: Verify version consistency
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(tr -d '[:space:]' < VERSION)"
+          [[ -n "$version" ]]
+          grep -q "$version" README.md || {
+            echo "::error file=README.md::README does not mention VERSION=$version"
+            exit 1
+          }
