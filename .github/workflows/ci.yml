@@ -24,6 +24,8 @@ jobs:
           python-version: '3.13'
       - name: Install dependencies
         run: python -m pip install -r requirements.txt
+      - name: Validate public repository privacy
+        run: python scripts/check_repository_privacy.py
       - name: Validate runtime configuration
         run: python scripts/check_config.py
       - name: Run migrations
