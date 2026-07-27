@@ -11,6 +11,20 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 import pytest
 
+DEMO_VIN = "DEMO-VIN-00000001"
+APP_MODULES = [
+    "app.main",
+    "app.application",
+    "app.models",
+    "app.database",
+    "app.security",
+    "app.domain",
+    "app.pdf",
+    "app.backup",
+    "app.storage_quota",
+    "app.share_limits",
+]
+
 
 def load_app(tmp_path, monkeypatch):
     root = Path(__file__).resolve().parents[1]
@@ -34,8 +48,8 @@ def load_app(tmp_path, monkeypatch):
     monkeypatch.setenv('BACKUP_PATH', str(backups))
     monkeypatch.setenv('PUBLIC_BASE_URL', 'http://testserver')
     monkeypatch.setenv('ADMIN_BACKUP_TOKEN', 'test-backup-token')
-    for m in ['app.main','app.models','app.database','app.security','app.domain','app.pdf','app.backup']:
-        sys.modules.pop(m, None)
+    for module in APP_MODULES:
+        sys.modules.pop(module, None)
     import app.main
     return app.main
 
@@ -48,7 +62,7 @@ def create_restorable_backup(c):
     r = c.post('/api/auth/register', data={'email':'owner@example.com', 'password':'StrongPassword123'})
     assert r.status_code == 201
     vehicle = c.post('/api/vehicles', headers=csrf(c), data={
-        'vin':'JMZBK12Z270000001', 'registration_number':'А000АА00', 'make':'Mazda', 'model':'3 BK',
+        'vin':DEMO_VIN, 'registration_number':'А000АА00', 'make':'Mazda', 'model':'3 BK',
         'trim':'рестайлинг', 'year':2006, 'current_mileage':178711, 'purchase_date':'2024-08-10', 'purchase_mileage':'156000'
     })
     assert vehicle.status_code == 201, vehicle.text
@@ -143,8 +157,8 @@ def test_restored_database_can_boot_ready_endpoint(tmp_path, monkeypatch):
     monkeypatch.setenv('BACKUP_PATH', str(tmp_path / 'restored-backups'))
     monkeypatch.setenv('PUBLIC_BASE_URL', 'http://testserver')
     monkeypatch.setenv('ADMIN_BACKUP_TOKEN', 'test-backup-token')
-    for m in ['app.main','app.models','app.database','app.security','app.domain','app.pdf','app.backup']:
-        sys.modules.pop(m, None)
+    for module in APP_MODULES:
+        sys.modules.pop(module, None)
     import app.main as restored_main
     with TestClient(restored_main.app) as restored_client:
         assert restored_client.get('/health').json()['version'] == '0.24.0'
