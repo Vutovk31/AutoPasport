@@ -4,17 +4,18 @@
 
 ## Статус репозитория
 
-GitHub теперь содержит восстановленную структуру ключевых директорий:
+GitHub содержит каноническую структуру проекта:
 
 ```text
 app/
 alembic/
 scripts/
 tests/
+docs/
 .github/workflows/
 ```
 
-Корневые дубли Python-модулей, Alembic-файлов, shell-скриптов, тестов и CI workflow, появившиеся из-за ручной загрузки без папок, удалены. Рабочими считаются только файлы внутри канонических директорий.
+Рабочими считаются только файлы внутри канонических директорий. Текущие изменения после v0.24.0 ведутся в секции `Unreleased` до подтверждённого зелёного CI и следующего релизного тега.
 
 ## Локальный запуск
 
@@ -35,11 +36,17 @@ uvicorn app.main:app --reload
 pytest -q
 ```
 
-Ожидаемый результат канонической сборки v0.24.0:
+Фактическое число пройденных тестов фиксируется CI для конкретного commit SHA; README не закрепляет устаревающее статическое число.
 
-```text
-15 passed
+## Owner storage usage
+
+После входа интерфейс запрашивает:
+
+```http
+GET /api/me/storage
 ```
+
+Owner UI показывает количество документов, использованный объём, остаток квоты и предупреждения при 80%/95%. Backend и frontend используют один серверный read model; структурированные quota errors преобразуются в понятные сообщения.
 
 ## Backup
 
@@ -80,7 +87,7 @@ AutoPassport включает installable PWA shell:
 /static/icons/icon-512.png
 ```
 
-Service worker кеширует только application shell. API responses, PDFs и приватные данные автомобиля намеренно остаются network-only.
+Service worker кеширует только application shell. API responses, PDF и приватные данные автомобиля намеренно остаются network-only.
 
 ## Docker release run
 
@@ -93,4 +100,4 @@ docker compose up --build
 
 ## CI
 
-GitHub Actions должен запускать migrations, compile, pytest и docker-compose config validation.
+GitHub Actions проверяет repository privacy, runtime configuration, migrations, Python compilation, pytest, restore CLI и Docker Compose configuration.
