@@ -28,10 +28,10 @@ def test_owner_share_usage_counts_only_active_links(tmp_path):
     session = _session(tmp_path)
     owner, vehicle = _owner_with_vehicle(session)
     now = datetime.now(timezone.utc)
-    session.add_all([
-        ShareLink(vehicle_id=vehicle.id, token_hash="a"*64, created_at=now, expires_at=now+timedelta(hours=1)),
-        ShareLink(vehicle_id=vehicle.id, token_hash="b"*64, created_at=now, expires_at=now-timedelta(seconds=1)),
-        ShareLink(vehicle_id=vehicle.id, token_hash="c"*64, created_at=now, expires_at=now+timedelta(hours=1), revoked_at=now),
+    session.execute(ShareLink.__table__.insert(), [
+        {"id":"00000000-0000-0000-0000-000000000001","vehicle_id":vehicle.id,"token_hash":"a"*64,"created_at":now,"expires_at":now+timedelta(hours=1),"revoked_at":None},
+        {"id":"00000000-0000-0000-0000-000000000002","vehicle_id":vehicle.id,"token_hash":"b"*64,"created_at":now,"expires_at":now-timedelta(seconds=1),"revoked_at":None},
+        {"id":"00000000-0000-0000-0000-000000000003","vehicle_id":vehicle.id,"token_hash":"c"*64,"created_at":now,"expires_at":now+timedelta(hours=1),"revoked_at":now},
     ])
     session.commit()
     result = owner_share_usage(session, owner.id)
