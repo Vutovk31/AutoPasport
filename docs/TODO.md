@@ -2,9 +2,9 @@
 
 ## Критично
 
-- Получить JSON artifact `autopassport-release-check` для текущего commit SHA и подтвердить все восемь шагов.
-- Разобрать только фактические functional failed steps: command-not-found и timeout теперь фиксируются в отчёте без потери observability.
-- Исправить любой failed step до повышения версии.
+- Получить JSON artifact `autopassport-release-check` для текущего commit SHA.
+- Проверить поле `status`: значение `bootstrap` означает сбой до запуска полноценного release runner.
+- При финальном отчёте разобрать только фактические `failed_steps` и исправить их до повышения версии.
 - Проверить production-пример конфигурации на реальном deployment target.
 - Сохранять allowlist privacy gate только для синтетических тестовых VIN и шаблонов; реальные данные не коммитить.
 - Перед первым production cleanup выполнить dry-run и сохранить JSON audit report вместе с backup.
