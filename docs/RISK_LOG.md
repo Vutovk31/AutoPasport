@@ -103,3 +103,13 @@
 Контроль: `scripts/release_check.py` запускает восемь release gates последовательно для одного checkout, собирает коды возврата, длительность и ограниченный stdout/stderr каждого шага в JSON. GitHub Actions публикует отчёт `autopassport-release-check` при любом результате.
 
 Остаточный риск: до фактического получения успешного artifact текущая версия не считается release candidate; `VERSION` не повышается.
+
+## R-035 — Release runner завершается до создания отчёта
+
+**Статус:** снижен перехватом инфраструктурных ошибок и timeout.
+
+Риск: отсутствующая команда, системная ошибка запуска subprocess или зависший pytest/Docker могли выбросить исключение внутри orchestrator. В этом случае GitHub Actions переходил к публикации artifact, но JSON-файл отсутствовал, поэтому диагностика release candidate терялась.
+
+Контроль: каждый `CheckStep` имеет явный timeout. `FileNotFoundError` и другие `OSError` записываются как failed result с кодом 127; `TimeoutExpired` — с кодом 124 и доступным частичным stdout/stderr. Остальные шаги продолжают выполняться, после чего создаётся единый JSON report.
+
+Остаточный риск: аварийное завершение Python-процесса, нехватка диска или падение runner до вызова `scripts/release_check.py` по-прежнему могут исключить создание artifact.
