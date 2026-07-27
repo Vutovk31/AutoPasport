@@ -122,3 +122,21 @@ authenticated GET /api/me/shares/list
 ```
 
 Токен публичной ссылки не возвращается списковым endpoint: владелец получает только идентификатор записи, автомобиль и срок действия. Отзыв использует существующий mutation endpoint с CSRF-защитой и повторной owner-проверкой.
+
+## Attachment retention boundary
+
+```text
+scripts/cleanup_attachments.py
+→ dry-run by default
+→ compare Attachment rows with STORAGE_PATH
+→ protect every active attachment
+→ report active missing files and unsafe paths
+→ stop apply mode when integrity issues exist
+→ select old soft-deleted files and old orphans
+→ re-check eligibility immediately before unlink
+→ physically delete
+→ mark Attachment.purged_at / purge_reason
+→ write atomic JSON audit report
+```
+
+Период задаётся `ATTACHMENT_RETENTION_DAYS`. Автоматический cleanup при старте приложения запрещён: операция запускается отдельно, сначала в dry-run. Пропавший активный файл, symlink, небезопасный `stored_name`, soft-delete без `deleted_at` или повторное появление уже purged-файла блокируют применение целиком. Историческая строка Attachment сохраняется в SQLite, а физическое удаление фиксируется полями `purged_at` и `purge_reason`.
