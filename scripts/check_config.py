@@ -30,6 +30,7 @@ def main() -> int:
                 "public_base_url": config.public_base_url,
                 "cookie_secure": config.cookie_secure,
                 "max_upload_bytes": config.max_upload_bytes,
+                "attachment_retention_days": config.attachment_retention_days,
             },
             ensure_ascii=False,
         )
