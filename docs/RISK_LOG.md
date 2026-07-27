@@ -123,3 +123,13 @@
 Контроль: сразу после checkout workflow создаёт валидный `data/reports/release-check.json` со статусом `bootstrap`, `passed=false` и failed step `workflow_before_release_runner`. Полный release runner заменяет этот файл; если ранний сбой сохраняется, artifact всё равно показывает точную границу отказа. Статические тесты проверяют порядок bootstrap → install → release и обязательную публикацию artifact.
 
 Остаточный риск: сбой checkout или самого artifact upload action остаётся вне контроля репозитория.
+
+## R-037 — GitHub Actions результат невидим через Commit Status API
+
+**Статус:** снижен явной публикацией commit status.
+
+Риск: GitHub Actions создаёт check runs, тогда как используемый канал диагностики может читать только legacy commit statuses. Пустой список statuses в этом случае ошибочно воспринимается как отсутствие запуска или результата.
+
+Контроль: workflow получил `statuses: write` и через `actions/github-script` всегда публикует context `autopassport/release-check`. Состояние `success` допускается только при `report.passed === true` и пустом `failed_steps`; bootstrap, отсутствующий или неуспешный отчёт публикуются как `failure`. `target_url` ведёт на конкретный workflow run.
+
+Остаточный риск: если workflow не стартовал, checkout не выполнен или GitHub запрещает запись статуса политикой репозитория, context не появится; JSON artifact и workflow logs остаются дополнительными источниками диагностики.
