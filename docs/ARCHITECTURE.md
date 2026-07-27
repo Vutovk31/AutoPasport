@@ -66,3 +66,16 @@ authenticated GET /api/me/storage
 ```
 
 Расчёт квоты и API используют одну функцию `storage_usage_for_owner`, поэтому frontend видит те же значения, которыми backend блокирует новые загрузки. `app/main.py` является composition root; существующее приложение сохранено в `app/application.py`, а новые поперечные API подключаются без дальнейшего разрастания монолитного файла.
+
+## Storage usage owner UI boundary
+
+```text
+owner session restored
+→ GET /api/me/storage
+→ render document and byte utilization
+→ warn at 80%
+→ critical warning at 95%
+→ refresh after deletion and manual request
+```
+
+Frontend не вычисляет лимиты самостоятельно: он отображает серверный read model. Коды `owner_attachment_quota_exceeded` и `owner_storage_quota_exceeded` преобразуются в понятные владельцу сообщения. Приватные ответы API не кешируются service worker.
