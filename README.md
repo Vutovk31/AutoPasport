@@ -1,10 +1,6 @@
-# AutoPassport v0.24.1
+# AutoPassport v0.23.0
 
-Каноническая MVP-сборка электронного паспорта автомобиля: ремонтные визиты, позиции работ и деталей, trust-модель, временный публичный паспорт, PDF-отчёт, PWA и backup SQLite + storage.
-
-## Статус репозитория
-
-GitHub является каноническим источником исходного кода. Workflow `Repository integrity` проверяет наличие обязательных каталогов и файлов на каждом push и pull request.
+Каноническая MVP-сборка с ремонтными визитами, позициями работ, динамической trust-моделью, временным публичным паспортом, PDF-отчётом и backup SQLite + storage.
 
 ## Локальный запуск
 
@@ -25,28 +21,62 @@ uvicorn app.main:app --reload
 pytest -q
 ```
 
-## Backup и restore
+## Backup
+
+В `.env` задайте:
+
+```text
+ADMIN_BACKUP_TOKEN=change-me
+BACKUP_PATH=./data/backups
+```
+
+Создать backup:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/admin/backups \
+  -H 'X-Admin-Token: change-me'
+```
 
 Backup включает SQLite-базу, storage-файлы и `manifest.json` с SHA-256.
 
-```bash
-python scripts/restore_backup.py data/backups/<backup>.zip data/restored
-python scripts/restore_backup.py data/backups/<backup>.zip data/restored --verify-only
-```
-
-Restore проверяет пути архива, SHA-256 базы и storage, SQLite integrity и наличие обязательных таблиц.
 
 ## PWA
 
-Service worker кеширует только оболочку приложения. API, PDF и приватные данные остаются network-only.
+AutoPassport 0.23.0 includes an installable PWA shell:
 
-## Docker
+```text
+/manifest.webmanifest
+/service-worker.js
+/offline.html
+/static/icons/icon-192.png
+/static/icons/icon-512.png
+```
+
+The service worker caches only the application shell. API responses, PDFs and private vehicle data are intentionally network-only.
+
+## Docker release run
 
 ```bash
 cp .env.example .env
 docker compose up --build
 ```
 
+The container applies Alembic migrations on startup and exposes the app at http://127.0.0.1:8000.
+
 ## CI
 
-GitHub Actions проверяет целостность структуры, согласованность версии, миграции, компиляцию Python, pytest и синтаксис Docker Compose.
+GitHub Actions runs migrations, compiles Python modules, executes pytest and validates docker-compose syntax.
+
+## Verification note
+
+`pytest -q` does not require Docker. Docker Compose validation requires Docker to be installed locally or in CI.
+
+
+## Restore hardening
+
+```bash
+python scripts/restore_backup.py data/backups/<backup>.zip data/restored
+python scripts/restore_backup.py data/backups/<backup>.zip data/restored --verify-only
+```
+
+Restore checks archive paths, database SHA-256, storage SHA-256, SQLite integrity and required schema tables.

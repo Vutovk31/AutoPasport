@@ -1,0 +1,127 @@
+{
+  "make": "Mazda",
+  "model": "3 BK",
+  "trim": "рестайлинг",
+  "year": 2006,
+  "vin_masked": "JMZBK12Z27*******",
+  "registration_number_masked": "С***УР33",
+  "current_mileage": 178711,
+  "purchase_date": "2024-08-10",
+  "purchase_mileage": 156000,
+  "privacy_note": "Полные VIN и госномер не включены в общий архив Google Drive/GitHub.",
+  "known_total_cost_rubles": 45300,
+  "service_visits": [
+    {
+      "visit_date": "2026-06-01",
+      "mileage": 177000,
+      "kind": "repair_visit",
+      "title": "Ремонт правой передней подвески и привода",
+      "location": "знакомый сервис / мастер",
+      "description": "Работы выполнены одним пакетом. Сумма 15 600 ₽ указана за всё вместе, без разнесения по отдельным операциям.",
+      "total_cost_rubles": 15600,
+      "total_cost_status": "known",
+      "total_cost_visible_to_public": false,
+      "items": [
+        {
+          "item_type": "operation",
+          "title": "Замена правого переднего ступичного подшипника",
+          "cost_status": "included_in_visit"
+        },
+        {
+          "item_type": "operation",
+          "title": "Замена подвесного подшипника правого привода",
+          "description": "С сальниками и пыльниками в сборе",
+          "cost_status": "included_in_visit"
+        },
+        {
+          "item_type": "operation",
+          "title": "Замена правой передней шаровой опоры",
+          "cost_status": "included_in_visit"
+        },
+        {
+          "item_type": "operation",
+          "title": "Замена правого переднего ШРУСа",
+          "description": "Хороший Китай, по переписке с мастером",
+          "cost_status": "included_in_visit"
+        },
+        {
+          "item_type": "part",
+          "title": "Датчик давления",
+          "description": "Куплен и заменён, из переписки с мастером",
+          "cost_rubles": 800,
+          "cost_status": "known"
+        }
+      ]
+    },
+    {
+      "visit_date": "2026-06-25",
+      "mileage": 177000,
+      "kind": "maintenance_visit",
+      "title": "Замена масла в двигателе",
+      "location": "по знакомству",
+      "description": "Работа выполнена бесплатно по знакомству. Стоимость масла фиксируется отдельно.",
+      "total_cost_rubles": 3800,
+      "total_cost_status": "known",
+      "total_cost_visible_to_public": false,
+      "items": [
+        {
+          "item_type": "fluid",
+          "title": "Моторное масло Mannol H-Tech Plus 5W-30",
+          "brand": "Mannol",
+          "quantity": "4",
+          "unit": "л",
+          "cost_rubles": 3800,
+          "cost_status": "known"
+        },
+        {
+          "item_type": "labor",
+          "title": "Работа по замене масла двигателя",
+          "description": "Бесплатно по знакомству",
+          "cost_status": "free"
+        }
+      ]
+    },
+    {
+      "visit_date": "2026-07-01",
+      "mileage": 178000,
+      "kind": "repair_visit",
+      "title": "Замена сцепления и масла КПП",
+      "location": "знакомый мастер",
+      "description": "Работа 5 000 ₽ включает снятие КПП, замену сцепления и замену масла в коробке.",
+      "total_cost_rubles": 25900,
+      "total_cost_status": "known",
+      "total_cost_visible_to_public": false,
+      "items": [
+        {
+          "item_type": "part",
+          "title": "Комплект сцепления ZF Russia",
+          "brand": "ZF Russia",
+          "cost_rubles": 18000,
+          "cost_status": "known"
+        },
+        {
+          "item_type": "operation",
+          "title": "Замена выжимного подшипника",
+          "description": "Совместно со сцеплением, отдельная цена не дублируется",
+          "cost_status": "included_in_visit"
+        },
+        {
+          "item_type": "fluid",
+          "title": "MANNOL BASIC PLUS Getriebeoel 75W-90",
+          "brand": "Mannol",
+          "part_number": "8108",
+          "quantity": "3",
+          "unit": "л",
+          "cost_rubles": 2900,
+          "cost_status": "known"
+        },
+        {
+          "item_type": "labor",
+          "title": "Снятие КПП + замена сцепления + замена масла КПП",
+          "cost_rubles": 5000,
+          "cost_status": "known"
+        }
+      ]
+    }
+  ]
+}
