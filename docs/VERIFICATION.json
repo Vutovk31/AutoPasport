@@ -1,0 +1,13 @@
+{
+  "version": "0.24.0",
+  "compile": {
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "pytest": {
+    "returncode": 0,
+    "stdout": "...............                                                          [100%]\n15 passed in 16.30s\n",
+    "stderr": ""
+  }
+}

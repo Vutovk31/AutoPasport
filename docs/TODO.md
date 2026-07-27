@@ -1,14 +1,22 @@
+
 # TODO
 
-## Критично
+## Highest priority
+- Admin role instead of static backup token.
+- Full restore test that boots a separate restored app instance.
+- Storage quotas per owner.
+- Antivirus scanning for uploaded files.
 
-- Исправить все ошибки repository integrity workflow.
-- Подтвердить полный набор исходников и тестов в ветке `main`.
-- Получить зелёный результат функционального CI.
+## Release hardening
+- HTTPS deployment guide.
+- Domain/TLS setup.
+- Production secrets checklist.
+- Error monitoring.
 
-## После стабилизации CI
+## После v0.24.0
 
-- Storage quota policy.
-- Ограничение активных публичных ссылок.
-- Полноценная административная роль вместо статического токена.
-- Production HTTPS deployment.
+- Настроить production-домен и HTTPS.
+- Добавить storage quota policy.
+- Добавить антивирусную проверку документов.
+- Добавить полноценный admin role вместо статического backup token.
+- Добавить browser E2E smoke test.

@@ -1,0 +1,36 @@
+[
+  {
+    "file": "evidence/service_diagnostic_redacted.jpg",
+    "event_kind": "diagnostic",
+    "evidence_type": "diagnostic_report",
+    "trust_effect": "confirmed for diagnostic event",
+    "observed_text": [
+      "рекомендована замена правой шаровой опоры",
+      "люфт правого ступичного подшипника",
+      "подтекание масла — проверить поддон",
+      "износ шлицевого соединения правого привода",
+      "замена подвесного подшипника правого привода"
+    ],
+    "privacy": "имя клиента закрыто"
+  },
+  {
+    "file": "evidence/mechanic_parts_quote.jpg",
+    "event_kind": "estimate",
+    "evidence_type": "correspondence",
+    "trust_effect": "confirms estimate, not completed repair",
+    "prices_rub": {
+      "wheel_bearing": 4200,
+      "support_bearing_kit": 4050,
+      "ball_joint": 1500,
+      "oil_pressure_sensor": 800,
+      "cv_joint": 5100
+    }
+  },
+  {
+    "file": "evidence/balancing_correspondence.jpg",
+    "event_kind": "note",
+    "evidence_type": "correspondence",
+    "trust_effect": "does not confirm completed service",
+    "summary": "Запрос владельца на балансировку летних колёс."
+  }
+]
