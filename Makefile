@@ -1,4 +1,4 @@
-.PHONY: install migrate run test retention-scan retention-apply compose-check docker-build docker-up
+.PHONY: install migrate run test release-check retention-scan retention-apply compose-check docker-build docker-up
 
 install:
 	python -m pip install -r requirements.txt
@@ -11,6 +11,9 @@ run:
 
 test:
 	pytest -q
+
+release-check:
+	python scripts/release_check.py
 
 retention-scan:
 	python scripts/cleanup_attachments.py
