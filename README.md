@@ -38,6 +38,16 @@ pytest -q
 
 Фактическое число пройденных тестов фиксируется CI для конкретного commit SHA; README не закрепляет устаревающее статическое число.
 
+## Полная проверка релиза
+
+```bash
+python scripts/release_check.py
+# или
+make release-check
+```
+
+Команда одним запуском проверяет repository privacy, runtime configuration, Alembic migrations, Python compilation, полный pytest, restore CLI, attachment retention CLI и Docker Compose. Результат сохраняется в `data/reports/release-check-<timestamp>.json`. GitHub Actions публикует такой отчёт как artifact `autopassport-release-check` даже при неуспешной сборке.
+
 ## Owner storage usage
 
 После входа интерфейс запрашивает:
@@ -126,4 +136,4 @@ docker compose up --build
 
 ## CI
 
-GitHub Actions проверяет repository privacy, runtime configuration, migrations, Python compilation, pytest, restore CLI, attachment retention CLI и Docker Compose configuration.
+GitHub Actions запускает единый release verification runner и всегда сохраняет JSON-отчёт. Версия не повышается, пока отчёт не показывает успешное выполнение всех release gates.
