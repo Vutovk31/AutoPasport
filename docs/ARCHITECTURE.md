@@ -79,3 +79,16 @@ owner session restored
 ```
 
 Frontend не вычисляет лимиты самостоятельно: он отображает серверный read model. Коды `owner_attachment_quota_exceeded` и `owner_storage_quota_exceeded` преобразуются в понятные владельцу сообщения. Приватные ответы API не кешируются service worker.
+
+## Public share limit boundary
+
+```text
+new ShareLink
+→ resolve vehicle owner
+→ count active, unrevoked and unexpired links
+→ enforce per-vehicle limit
+→ enforce owner-wide limit
+→ insert or fail with structured HTTP 409
+```
+
+Активной считается только ссылка без `revoked_at` и с `expires_at` позже текущего времени. Enforcement выполняется на SQLAlchemy `before_insert`, поэтому защищает все пути создания ссылок. `GET /api/me/shares` использует тот же owner scope и показывает фактическое количество активных ссылок и остаток лимита.
