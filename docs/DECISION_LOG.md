@@ -99,3 +99,11 @@ GitHub Actions сохраняет JSON release report через `if: always()`.
 ## ADR-092 — Release step infrastructure failures are data, not orchestrator crashes
 
 Отсутствующая executable, `OSError` запуска или timeout отдельного release step не должны выбрасывать исключение наружу и предотвращать JSON report. Runner преобразует такие ситуации в failed result с кодами 127 или 124, сохраняет доступную диагностику и продолжает остальные независимые проверки. Исключение составляет только авария самого Python-процесса или невозможность записать отчёт.
+
+## ADR-093 — CI bootstraps a failing report before dependencies
+
+Сразу после checkout workflow обязан создать валидный bootstrap `release-check.json` с `passed=false`. Полноценный release runner заменяет его итоговым отчётом. Если setup Python, установка зависимостей или запуск orchestrator завершаются раньше, `if: always()` всё равно публикует диагностируемый artifact, а значение `workflow_before_release_runner` однозначно указывает на инфраструктурную границу отказа.
+
+## ADR-094 — Release verification supports manual dispatch
+
+Workflow сохраняет автоматические trigger-ы push и pull request, но дополнительно поддерживает `workflow_dispatch`. Повторная проверка одного состояния репозитория не должна требовать фиктивного commit; ручной запуск используется для диагностики инфраструктурных сбоев и подтверждения release candidate.
