@@ -5,6 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -20,6 +21,18 @@ jobs:
       ATTACHMENT_RETENTION_DAYS: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Bootstrap release verification report
+        shell: bash
+        run: |
+          mkdir -p data/reports
+          cat > data/reports/release-check.json <<'JSON'
+          {
+            "status": "bootstrap",
+            "passed": false,
+            "failed_steps": ["workflow_before_release_runner"],
+            "message": "Release runner did not replace the bootstrap report. Inspect preceding workflow steps."
+          }
+          JSON
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
