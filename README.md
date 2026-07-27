@@ -1,6 +1,20 @@
-# AutoPassport v0.23.0
+# AutoPassport v0.24.0
 
-Каноническая MVP-сборка с ремонтными визитами, позициями работ, динамической trust-моделью, временным публичным паспортом, PDF-отчётом и backup SQLite + storage.
+Каноническая MVP-сборка электронного паспорта автомобиля с ремонтными визитами, позициями работ и деталей, trust-моделью, временным публичным паспортом, PDF-отчётом, PWA и backup/restore SQLite + storage.
+
+## Статус репозитория
+
+GitHub теперь содержит восстановленную структуру ключевых директорий:
+
+```text
+app/
+alembic/
+scripts/
+tests/
+.github/workflows/
+```
+
+Корневые копии файлов, появившиеся из-за ручной загрузки без папок, оставлены временно и будут удалены отдельной cleanup-итерацией после подтверждения CI.
 
 ## Локальный запуск
 
@@ -21,6 +35,12 @@ uvicorn app.main:app --reload
 pytest -q
 ```
 
+Ожидаемый результат канонической сборки v0.24.0:
+
+```text
+15 passed
+```
+
 ## Backup
 
 В `.env` задайте:
@@ -39,10 +59,18 @@ curl -X POST http://127.0.0.1:8000/api/admin/backups \
 
 Backup включает SQLite-базу, storage-файлы и `manifest.json` с SHA-256.
 
+## Restore hardening
+
+```bash
+python scripts/restore_backup.py data/backups/<backup>.zip data/restored
+python scripts/restore_backup.py data/backups/<backup>.zip data/restored --verify-only
+```
+
+Restore проверяет archive paths, database SHA-256, storage SHA-256, SQLite integrity и обязательные таблицы схемы.
 
 ## PWA
 
-AutoPassport 0.23.0 includes an installable PWA shell:
+AutoPassport включает installable PWA shell:
 
 ```text
 /manifest.webmanifest
@@ -52,7 +80,7 @@ AutoPassport 0.23.0 includes an installable PWA shell:
 /static/icons/icon-512.png
 ```
 
-The service worker caches only the application shell. API responses, PDFs and private vehicle data are intentionally network-only.
+Service worker кеширует только application shell. API responses, PDFs и приватные данные автомобиля намеренно остаются network-only.
 
 ## Docker release run
 
@@ -61,22 +89,8 @@ cp .env.example .env
 docker compose up --build
 ```
 
-The container applies Alembic migrations on startup and exposes the app at http://127.0.0.1:8000.
+Контейнер применяет Alembic migrations на старте и поднимает приложение на `http://127.0.0.1:8000`.
 
 ## CI
 
-GitHub Actions runs migrations, compiles Python modules, executes pytest and validates docker-compose syntax.
-
-## Verification note
-
-`pytest -q` does not require Docker. Docker Compose validation requires Docker to be installed locally or in CI.
-
-
-## Restore hardening
-
-```bash
-python scripts/restore_backup.py data/backups/<backup>.zip data/restored
-python scripts/restore_backup.py data/backups/<backup>.zip data/restored --verify-only
-```
-
-Restore checks archive paths, database SHA-256, storage SHA-256, SQLite integrity and required schema tables.
+GitHub Actions должен запускать migrations, compile, pytest и docker-compose config validation.
