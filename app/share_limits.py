@@ -32,6 +32,10 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _aware(value: datetime) -> datetime:
+    return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+
+
 def _active_filter(now: datetime):
     return (
         ShareLink.revoked_at.is_(None),
@@ -70,6 +74,33 @@ def owner_share_usage(session: Session, owner_id: str) -> dict:
         "max_active_links": MAX_ACTIVE_SHARE_LINKS_PER_OWNER,
         "remaining_links": max(0, MAX_ACTIVE_SHARE_LINKS_PER_OWNER - usage.active_owner_links),
     }
+
+
+def active_share_links(session: Session, owner_id: str, *, now: datetime | None = None) -> list[dict]:
+    current = now or _now()
+    rows = session.execute(
+        select(ShareLink, Vehicle)
+        .join(Vehicle, Vehicle.id == ShareLink.vehicle_id)
+        .where(Vehicle.owner_id == owner_id, *_active_filter(current))
+        .order_by(ShareLink.expires_at.asc())
+    ).all()
+    result = []
+    for link, vehicle in rows:
+        expires_at = _aware(link.expires_at)
+        result.append({
+            "id": link.id,
+            "vehicle_id": vehicle.id,
+            "vehicle": {
+                "make": vehicle.make,
+                "model": vehicle.model,
+                "year": vehicle.year,
+                "registration_number": vehicle.registration_number,
+            },
+            "created_at": _aware(link.created_at).isoformat(),
+            "expires_at": expires_at.isoformat(),
+            "seconds_remaining": max(0, int((expires_at - current).total_seconds())),
+        })
+    return result
 
 
 def _owner_id(connection: Connection, vehicle_id: str) -> str:
