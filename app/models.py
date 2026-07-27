@@ -105,6 +105,8 @@ class Attachment(Base):
     sha256: Mapped[str] = mapped_column(String(64))
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    purged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    purge_reason: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 class EventAudit(Base):
