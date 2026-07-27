@@ -24,6 +24,7 @@ class RuntimeConfig:
     max_owner_storage_bytes: int
     max_active_share_links_per_vehicle: int
     max_active_share_links_per_owner: int
+    attachment_retention_days: int
 
     @property
     def is_production(self) -> bool:
@@ -59,6 +60,7 @@ def load_runtime_config() -> RuntimeConfig:
         max_owner_storage_bytes=_required_int("MAX_OWNER_STORAGE_BYTES", 250 * 1024 * 1024),
         max_active_share_links_per_vehicle=_required_int("MAX_ACTIVE_SHARE_LINKS_PER_VEHICLE", 1),
         max_active_share_links_per_owner=_required_int("MAX_ACTIVE_SHARE_LINKS_PER_OWNER", 10),
+        attachment_retention_days=_required_int("ATTACHMENT_RETENTION_DAYS", 30),
     )
 
 
@@ -91,6 +93,8 @@ def validate_runtime_config(config: RuntimeConfig) -> list[str]:
         errors.append("MAX_ACTIVE_SHARE_LINKS_PER_OWNER must not exceed 100 in MVP")
     if config.max_active_share_links_per_owner < config.max_active_share_links_per_vehicle:
         errors.append("MAX_ACTIVE_SHARE_LINKS_PER_OWNER must be at least MAX_ACTIVE_SHARE_LINKS_PER_VEHICLE")
+    if config.attachment_retention_days > 3650:
+        errors.append("ATTACHMENT_RETENTION_DAYS must not exceed 3650 days")
 
     if config.is_production:
         if not config.public_base_url.startswith("https://"):
