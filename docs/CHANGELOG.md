@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Новые изменения после первого подтверждённого MVP-релиза ещё не добавлены.
+
+## 0.25.0 — 2026-07-28
+
 - Добавлен `app/config.py` с типизированной runtime-конфигурацией.
 - Добавлен production startup gate: HTTPS, secure cookie, сильный admin token, безопасный DATABASE_URL и раздельные storage/backup paths.
 - Добавлена команда `python scripts/check_config.py`.
@@ -51,7 +55,7 @@
 - Release check формирует JSON-отчёт со всеми шагами и не скрывает дополнительные ошибки после первого сбоя.
 - GitHub Actions всегда публикует `autopassport-release-check` как artifact, включая неуспешные сборки.
 - Добавлены тесты состава release suite, skip-docker режима, агрегации ошибок и JSON report.
-- Release runner теперь преобразует отсутствующую executable и системную ошибку запуска в failed step с кодом 127.
+- Release runner преобразует отсутствующую executable и системную ошибку запуска в failed step с кодом 127.
 - Для каждого release step добавлен явный timeout; превышение фиксируется кодом 124 с сохранением доступного stdout/stderr.
 - Добавлены тесты продолжения release-check после отсутствующей команды, timeout diagnostics и передачи лимита времени runner-у.
 - CI создаёт bootstrap `release-check.json` до setup Python и установки зависимостей, поэтому artifact сохраняется даже при раннем падении workflow.
@@ -63,6 +67,10 @@
 - Добавлена автоприменяемая test-fixture, полностью очищающая кэш модулей `app.*` и закрывающая старый SQLAlchemy engine между тестами.
 - Release-тесты синхронизированы с единым orchestrator `scripts/release_check.py` вместо устаревших прямых команд в workflow.
 - Docker Compose больше не требует существования локального `.env` для структурной валидации и использует безопасные переменные с defaults.
+- Публичные test/seed identifiers заменены на явно демонстрационные значения, а VIN privacy allowlist удалён.
+- Исправлена runtime identity проверка `ShareQuotaExceeded` после изоляции модулей между тестами.
+- Runtime `/health`, FastAPI OpenAPI metadata и PWA cache синхронизированы с каноническим `VERSION=0.25.0`.
+- Для release candidate и итогового `main` подтверждены восемь из восьми release gates и полный набор из 70 тестов.
 
 ## 0.24.1
 
