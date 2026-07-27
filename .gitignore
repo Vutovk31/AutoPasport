@@ -6,4 +6,6 @@ __pycache__/
 data/autopassport.db
 data/storage/*
 !data/storage/.gitkeep
+data/reports/*
+!data/reports/.gitkeep
 sample_data/private_vehicle.json
