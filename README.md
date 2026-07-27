@@ -48,6 +48,32 @@ GET /api/me/storage
 
 Owner UI показывает количество документов, использованный объём, остаток квоты и предупреждения при 80%/95%. Backend и frontend используют один серверный read model; структурированные quota errors преобразуются в понятные сообщения.
 
+## Attachment retention
+
+Период хранения физического файла после soft-delete задаётся:
+
+```text
+ATTACHMENT_RETENTION_DAYS=30
+```
+
+Безопасная проверка без удаления:
+
+```bash
+python scripts/cleanup_attachments.py
+# или
+make retention-scan
+```
+
+После изучения JSON audit report и создания backup применить очистку:
+
+```bash
+python scripts/cleanup_attachments.py --apply
+# или
+make retention-apply
+```
+
+Apply блокируется целиком при пропавшем активном файле, небезопасном пути, symlink или неконсистентной записи. Активные вложения не удаляются независимо от возраста. Audit reports сохраняются в `data/reports/` и не коммитятся.
+
 ## Backup
 
 В `.env` задайте:
@@ -100,4 +126,4 @@ docker compose up --build
 
 ## CI
 
-GitHub Actions проверяет repository privacy, runtime configuration, migrations, Python compilation, pytest, restore CLI и Docker Compose configuration.
+GitHub Actions проверяет repository privacy, runtime configuration, migrations, Python compilation, pytest, restore CLI, attachment retention CLI и Docker Compose configuration.
