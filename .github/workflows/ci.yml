@@ -17,6 +17,7 @@ jobs:
       ADMIN_BACKUP_TOKEN: ci-admin-token
       PUBLIC_BASE_URL: http://127.0.0.1:8000
       COOKIE_SECURE: false
+      ATTACHMENT_RETENTION_DAYS: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -36,5 +37,7 @@ jobs:
         run: pytest -q
       - name: Validate restore CLI import
         run: python scripts/restore_backup.py --help
+      - name: Validate attachment retention CLI import
+        run: python scripts/cleanup_attachments.py --help
       - name: Validate Docker Compose
         run: docker compose config -q
