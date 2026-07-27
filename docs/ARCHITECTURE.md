@@ -144,7 +144,10 @@ scripts/cleanup_attachments.py
 ## Release verification boundary
 
 ```text
-scripts/release_check.py
+workflow checkout
+→ create bootstrap release-check.json
+→ setup Python and install dependencies
+→ scripts/release_check.py replaces bootstrap report
 → repository privacy
 → runtime configuration
 → Alembic head
@@ -152,10 +155,10 @@ scripts/release_check.py
 → complete pytest suite
 → restore and retention CLI imports
 → Docker Compose validation
-→ JSON release report
-→ CI artifact retained for inspection
+→ final JSON release report
+→ artifact retained for inspection with if: always()
 ```
 
-Release candidate принимается только при успешном завершении всех шагов одного запуска. Проверки не останавливаются после первой ошибки, поэтому JSON-отчёт содержит полный список дефектов. GitHub Actions публикует отчёт через `if: always()`, включая упавшие сборки; номер версии повышается отдельно только после подтверждённого успешного отчёта.
+Release candidate принимается только при успешном завершении всех шагов одного запуска. Проверки не останавливаются после первой ошибки, поэтому итоговый JSON-отчёт содержит полный список дефектов. До запуска orchestrator workflow создаёт bootstrap-report со статусом `passed=false`. Если setup Python, установка зависимостей или сам runner завершаются раньше финальной записи, artifact всё равно содержит диагностируемый признак `workflow_before_release_runner`, а не отсутствующий файл.
 
-Каждый шаг имеет явный timeout. Отсутствующая executable, системная ошибка запуска или превышение timeout преобразуются в обычный failed result с кодом 127 или 124, а не прерывают orchestrator исключением. Это гарантирует создание JSON report после начала release runner даже при отсутствии Docker/Alembic или зависшем pytest.
+Каждый шаг release runner имеет явный timeout. Отсутствующая executable, системная ошибка запуска или превышение timeout преобразуются в ordinary failed result с кодом 127 или 124, а не прерывают orchestrator исключением. Полноценный runner атомарно заменяет bootstrap-report после начала проверки.
