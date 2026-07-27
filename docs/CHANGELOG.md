@@ -27,6 +27,11 @@
 - Добавлена расшифровка quota error codes в понятные сообщения.
 - Восстановлен полный каталог `app/static`, включая PWA manifest, offline shell, service worker и иконки.
 - Добавлены статические тесты storage UI и размещения PWA-артефактов.
+- Добавлены owner-wide и per-vehicle лимиты активных публичных ссылок.
+- Активные ссылки считаются только до истечения срока и до отзыва.
+- Добавлен аутентифицированный endpoint `GET /api/me/shares`.
+- Добавлены структурированные ошибки `vehicle_share_link_quota_exceeded` и `owner_share_link_quota_exceeded` с HTTP 409.
+- Добавлены тесты usage, истечения, отзыва, авторизации и vehicle limit.
 
 ## 0.24.1
 
