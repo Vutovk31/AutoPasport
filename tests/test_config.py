@@ -15,6 +15,8 @@ def config(**overrides):
         "admin_backup_token": "",
         "cookie_secure": False,
         "max_upload_bytes": 5 * 1024 * 1024,
+        "max_owner_attachments": 100,
+        "max_owner_storage_bytes": 250 * 1024 * 1024,
     }
     values.update(overrides)
     return RuntimeConfig(**values)
@@ -52,3 +54,21 @@ def test_storage_and_backup_directories_must_differ():
 def test_mvp_upload_limit_is_bounded():
     errors = validate_runtime_config(config(max_upload_bytes=26 * 1024 * 1024))
     assert "MAX_UPLOAD_BYTES must not exceed 25 MiB in MVP" in errors
+
+
+def test_owner_quota_bounds_are_validated():
+    errors = validate_runtime_config(
+        config(
+            max_owner_attachments=1001,
+            max_owner_storage_bytes=6 * 1024 * 1024 * 1024,
+        )
+    )
+    assert "MAX_OWNER_ATTACHMENTS must not exceed 1000 in MVP" in errors
+    assert "MAX_OWNER_STORAGE_BYTES must not exceed 5 GiB in MVP" in errors
+
+
+def test_owner_storage_quota_cannot_be_smaller_than_single_upload_limit():
+    errors = validate_runtime_config(
+        config(max_upload_bytes=10 * 1024 * 1024, max_owner_storage_bytes=5 * 1024 * 1024)
+    )
+    assert "MAX_OWNER_STORAGE_BYTES must be at least MAX_UPLOAD_BYTES" in errors
