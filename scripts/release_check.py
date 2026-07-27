@@ -12,12 +12,16 @@ import time
 from typing import Callable, Sequence
 
 ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_STEP_TIMEOUT_SECONDS = 1200
+COMMAND_NOT_FOUND_RETURN_CODE = 127
+COMMAND_TIMEOUT_RETURN_CODE = 124
 
 
 @dataclass(frozen=True)
 class CheckStep:
     name: str
     command: tuple[str, ...]
+    timeout_seconds: int = DEFAULT_STEP_TIMEOUT_SECONDS
 
 
 @dataclass
@@ -37,21 +41,29 @@ class StepResult:
 def build_steps(*, skip_docker: bool = False) -> list[CheckStep]:
     python = sys.executable
     steps = [
-        CheckStep("repository_privacy", (python, "scripts/check_repository_privacy.py")),
-        CheckStep("runtime_configuration", (python, "scripts/check_config.py")),
-        CheckStep("database_migrations", ("alembic", "upgrade", "head")),
-        CheckStep("python_compilation", (python, "-m", "compileall", "-q", "app", "scripts")),
-        CheckStep("test_suite", (python, "-m", "pytest", "-q")),
-        CheckStep("restore_cli", (python, "scripts/restore_backup.py", "--help")),
-        CheckStep("retention_cli", (python, "scripts/cleanup_attachments.py", "--help")),
+        CheckStep("repository_privacy", (python, "scripts/check_repository_privacy.py"), 120),
+        CheckStep("runtime_configuration", (python, "scripts/check_config.py"), 120),
+        CheckStep("database_migrations", ("alembic", "upgrade", "head"), 300),
+        CheckStep("python_compilation", (python, "-m", "compileall", "-q", "app", "scripts"), 180),
+        CheckStep("test_suite", (python, "-m", "pytest", "-q"), 1200),
+        CheckStep("restore_cli", (python, "scripts/restore_backup.py", "--help"), 120),
+        CheckStep("retention_cli", (python, "scripts/cleanup_attachments.py", "--help"), 120),
     ]
     if not skip_docker:
-        steps.append(CheckStep("docker_compose", ("docker", "compose", "config", "-q")))
+        steps.append(CheckStep("docker_compose", ("docker", "compose", "config", "-q"), 180))
     return steps
 
 
 def _tail(value: str, limit: int = 12000) -> str:
     return value if len(value) <= limit else value[-limit:]
+
+
+def _stream_text(value: str | bytes | None) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return value
 
 
 def execute_step(
@@ -60,21 +72,41 @@ def execute_step(
     runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
 ) -> StepResult:
     started = time.monotonic()
-    completed = runner(
-        list(step.command),
-        cwd=ROOT,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    try:
+        completed = runner(
+            list(step.command),
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=step.timeout_seconds,
+        )
+        returncode = int(completed.returncode)
+        stdout = _stream_text(completed.stdout)
+        stderr = _stream_text(completed.stderr)
+    except FileNotFoundError as exc:
+        returncode = COMMAND_NOT_FOUND_RETURN_CODE
+        stdout = ""
+        stderr = f"Command unavailable: {exc}"
+    except subprocess.TimeoutExpired as exc:
+        returncode = COMMAND_TIMEOUT_RETURN_CODE
+        stdout = _stream_text(exc.stdout)
+        stderr = _stream_text(exc.stderr)
+        suffix = f"Command timed out after {step.timeout_seconds} seconds"
+        stderr = f"{stderr.rstrip()}\n{suffix}" if stderr else suffix
+    except OSError as exc:
+        returncode = COMMAND_NOT_FOUND_RETURN_CODE
+        stdout = ""
+        stderr = f"Command execution failed: {exc}"
+
     duration_ms = round((time.monotonic() - started) * 1000)
     return StepResult(
         name=step.name,
         command=list(step.command),
-        returncode=int(completed.returncode),
+        returncode=returncode,
         duration_ms=duration_ms,
-        stdout=_tail(completed.stdout or ""),
-        stderr=_tail(completed.stderr or ""),
+        stdout=_tail(stdout),
+        stderr=_tail(stderr),
     )
 
 
