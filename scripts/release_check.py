@@ -50,7 +50,7 @@ def build_steps(*, skip_docker: bool = False) -> list[CheckStep]:
         CheckStep("retention_cli", (python, "scripts/cleanup_attachments.py", "--help"), 120),
     ]
     if not skip_docker:
-        steps.append(CheckStep("docker_compose", ("docker", "compose", "config", "-q"), 180))
+        steps.append(CheckStep("docker_compose", ("docker", "compose", "--env-file", ".env.example", "config", "-q"), 180))
     return steps
 
 
