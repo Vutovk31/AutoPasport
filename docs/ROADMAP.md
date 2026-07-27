@@ -18,10 +18,11 @@
 - Share usage подключён к owner UI с количеством, остатком, progress-индикатором и обновлением после попытки создания ссылки.
 - Добавлен owner-scoped список активных публичных ссылок с автомобилем, сроком действия и оставшимся временем.
 - Добавлен явный отзыв активной ссылки из owner UI с последующим обновлением списка и usage.
+- Реализован attachment retention cleanup: dry-run, database/storage reconciliation, fail-closed integrity gate, физическое удаление старых soft-deleted и orphan-файлов, purge audit fields и JSON report.
 
 ## Следующий приоритет
 
-- Подтвердить зелёный основной CI после frontend, storage и share-link hardening.
-- Добавить retention cleanup физически удалённых вложений.
-- Добавить автоматическую очистку истёкших share-link записей после периода аудита.
+- Подтвердить зелёный основной CI после frontend, storage, share-link и retention hardening.
+- Добавить retention cleanup исторических истёкших ShareLink после периода аудита.
+- Добавить регулярный безопасный запуск maintenance-команд вне startup path.
 - После этого перейти к полноценной административной роли вместо статического токена.
