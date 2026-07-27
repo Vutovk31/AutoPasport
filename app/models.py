@@ -4,13 +4,16 @@ from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Tex
 from sqlalchemy.orm import Mapped, mapped_column
 from .database import Base
 
+
 def uid(): return str(uuid4())
+
 
 class User(Base):
     __tablename__ = "users"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(Text)
+
 
 class SessionToken(Base):
     __tablename__ = "session_tokens"
@@ -19,6 +22,7 @@ class SessionToken(Base):
     csrf_hash: Mapped[str] = mapped_column(String(64))
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
 
 class Vehicle(Base):
     __tablename__ = "vehicles"
@@ -33,6 +37,7 @@ class Vehicle(Base):
     current_mileage: Mapped[int] = mapped_column(Integer)
     purchase_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     purchase_mileage: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
 
 class HistoryEvent(Base):
     __tablename__ = "history_events"
@@ -49,6 +54,7 @@ class HistoryEvent(Base):
     revision: Mapped[int] = mapped_column(Integer, default=1)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
 
 class ServiceVisit(Base):
     __tablename__ = "service_visits"
@@ -68,6 +74,7 @@ class ServiceVisit(Base):
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+
 class ServiceItem(Base):
     __tablename__ = "service_items"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
@@ -84,6 +91,7 @@ class ServiceItem(Base):
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+
 class Attachment(Base):
     __tablename__ = "attachments"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
@@ -98,6 +106,7 @@ class Attachment(Base):
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+
 class EventAudit(Base):
     __tablename__ = "event_audits"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
@@ -108,6 +117,7 @@ class EventAudit(Base):
     before_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     after_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
 
 class VisitAudit(Base):
     __tablename__ = "visit_audits"
@@ -120,6 +130,7 @@ class VisitAudit(Base):
     after_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
+
 class ShareLink(Base):
     __tablename__ = "share_links"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
@@ -128,3 +139,13 @@ class ShareLink(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+from .storage_quota import register_storage_quota_listener
+
+register_storage_quota_listener(
+    Attachment=Attachment,
+    HistoryEvent=HistoryEvent,
+    ServiceVisit=ServiceVisit,
+    Vehicle=Vehicle,
+)
