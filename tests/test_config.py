@@ -17,6 +17,9 @@ def config(**overrides):
         "max_upload_bytes": 5 * 1024 * 1024,
         "max_owner_attachments": 100,
         "max_owner_storage_bytes": 250 * 1024 * 1024,
+        "max_active_share_links_per_vehicle": 1,
+        "max_active_share_links_per_owner": 10,
+        "attachment_retention_days": 30,
     }
     values.update(overrides)
     return RuntimeConfig(**values)
@@ -72,3 +75,16 @@ def test_owner_storage_quota_cannot_be_smaller_than_single_upload_limit():
         config(max_upload_bytes=10 * 1024 * 1024, max_owner_storage_bytes=5 * 1024 * 1024)
     )
     assert "MAX_OWNER_STORAGE_BYTES must be at least MAX_UPLOAD_BYTES" in errors
+
+
+def test_share_limits_are_bounded_and_consistent():
+    errors = validate_runtime_config(
+        config(max_active_share_links_per_vehicle=11, max_active_share_links_per_owner=5)
+    )
+    assert "MAX_ACTIVE_SHARE_LINKS_PER_VEHICLE must not exceed 10 in MVP" in errors
+    assert "MAX_ACTIVE_SHARE_LINKS_PER_OWNER must be at least MAX_ACTIVE_SHARE_LINKS_PER_VEHICLE" in errors
+
+
+def test_attachment_retention_period_is_bounded():
+    errors = validate_runtime_config(config(attachment_retention_days=3651))
+    assert "ATTACHMENT_RETENTION_DAYS must not exceed 3650 days" in errors
