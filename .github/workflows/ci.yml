@@ -10,11 +10,13 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
+      APP_ENV: test
       DATABASE_URL: sqlite:///./data/ci.db
       STORAGE_PATH: ./data/storage
       BACKUP_PATH: ./data/backups
       ADMIN_BACKUP_TOKEN: ci-admin-token
       PUBLIC_BASE_URL: http://127.0.0.1:8000
+      COOKIE_SECURE: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -22,6 +24,8 @@ jobs:
           python-version: '3.13'
       - name: Install dependencies
         run: python -m pip install -r requirements.txt
+      - name: Validate runtime configuration
+        run: python scripts/check_config.py
       - name: Run migrations
         run: alembic upgrade head
       - name: Compile Python
