@@ -4,6 +4,8 @@ The existing application routes live in app.application. This module adds
 small cross-cutting API surfaces without expanding the legacy monolith.
 """
 
+from pathlib import Path
+
 from fastapi import Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -12,6 +14,19 @@ from .application import *  # noqa: F401,F403
 from .security import current_user, db
 from .storage_quota import owner_storage_usage
 from .share_limits import ShareQuotaExceeded, active_share_links, owner_share_usage
+
+
+APP_VERSION = (Path(__file__).resolve().parents[1] / "VERSION").read_text(encoding="utf-8").strip()
+if not APP_VERSION:
+    raise RuntimeError("VERSION must not be empty")
+app.version = APP_VERSION
+app.router.routes = [route for route in app.router.routes if getattr(route, "path", None) != "/health"]
+
+
+@app.get("/health", tags=["operations"])
+def health():
+    """Return the release version from the canonical VERSION file."""
+    return {"status": "ok", "version": APP_VERSION}
 
 
 @app.exception_handler(ShareQuotaExceeded)
