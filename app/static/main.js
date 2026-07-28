@@ -1,6 +1,24 @@
 const $ = selector => document.querySelector(selector);
 let vehicleId = null;
 let garageRows = [];
+let inboxDocuments = [];
+
+const DOCUMENT_TYPE_LABELS = {
+  receipt: 'Чек',
+  work_order: 'Заказ-наряд',
+  service_act: 'Акт выполненных работ',
+  diagnostic_report: 'Диагностический отчёт',
+  estimate: 'Смета',
+};
+
+const DOCUMENT_STATUS_LABELS = {
+  uploaded: 'Загружен, ожидает обработки',
+  processing: 'Обрабатывается',
+  needs_review: 'Требует проверки',
+  confirmed: 'Подтверждён',
+  failed: 'Ошибка обработки',
+  archived: 'В архиве',
+};
 
 function csrf() {
   return decodeURIComponent((document.cookie.split('; ').find(x => x.startsWith('autopassport_csrf=')) || '=').split('=')[1]);
@@ -44,6 +62,7 @@ function setView(viewName) {
   document.querySelectorAll('.bottom-nav [data-view]').forEach(button => {
     button.classList.toggle('active', button.dataset.view === viewName);
   });
+  if (viewName === 'scan') refreshDocumentInbox();
 }
 
 function formatBytes(bytes) {
@@ -226,8 +245,9 @@ function renderArchiveSummary(data) {
   const visits = data.visits || [];
   const events = data.events || [];
   const itemCount = visits.reduce((sum, visit) => sum + (visit.items || []).length, 0);
-  const documentCount = visits.reduce((sum, visit) => sum + (visit.attachments || []).length, 0)
+  const attachedCount = visits.reduce((sum, visit) => sum + (visit.attachments || []).length, 0)
     + events.reduce((sum, event) => sum + (event.attachments || []).length, 0);
+  const documentCount = attachedCount + inboxDocuments.length;
   $('#repairCount').textContent = `${visits.length} записей`;
   $('#partsCount').textContent = `${itemCount} записей`;
   $('#mileageCount').textContent = `${visits.filter(v => v.mileage).length + events.filter(e => e.mileage).length} отметки`;
@@ -247,10 +267,93 @@ function renderLatestRecord(data) {
   $('#latestRecord').innerHTML = `<article class="timeline-card"><span class="tile-icon repair">🔧</span><div><small>${escapeHtml(latest.date)}${latest.mileage ? ` · ${Number(latest.mileage).toLocaleString('ru-RU')} км` : ''}</small><h3>${escapeHtml(latest.title)}</h3></div><span>›</span></article>`;
 }
 
+function ensureDocumentInboxUi() {
+  const scanCard = document.querySelector('.scan-card');
+  if (!scanCard || $('#documentType')) return;
+  const typeSelect = document.createElement('select');
+  typeSelect.id = 'documentType';
+  typeSelect.setAttribute('aria-label', 'Тип документа');
+  typeSelect.innerHTML = Object.entries(DOCUMENT_TYPE_LABELS)
+    .map(([value, label]) => `<option value="${value}">${label}</option>`)
+    .join('');
+  scanCard.insertBefore(typeSelect, $('#scanFile'));
+
+  const inbox = document.createElement('section');
+  inbox.className = 'document-inbox card';
+  inbox.innerHTML = '<div class="section-title-row"><div><p class="eyebrow">Входящие документы</p><h2>Ожидают обработки</h2></div><button id="refreshDocuments" type="button" class="text-button">Обновить</button></div><div id="documentInboxList"><p class="muted-card">Выберите автомобиль.</p></div>';
+  document.querySelector('[data-view-panel="scan"]')?.append(inbox);
+  $('#refreshDocuments').onclick = refreshDocumentInbox;
+
+  const style = document.createElement('style');
+  style.textContent = `
+    #documentType{width:100%;margin:8px 0 12px;background:#fff}
+    .document-inbox{margin-top:16px}
+    .document-inbox-list{display:grid;gap:10px}
+    .document-inbox-item{display:grid;grid-template-columns:42px 1fr;gap:12px;align-items:center;padding:12px;border:1px solid #dfe8e5;border-radius:16px;background:#fff}
+    .document-inbox-item .doc-icon{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:#e7f3ef;color:#0f6b5a;font-weight:900}
+    .document-inbox-item h3{margin:2px 0 4px;font-size:1rem}
+    .document-inbox-item small{display:block;color:#667085}
+    .document-status{display:inline-flex;margin-top:7px;padding:5px 9px;border-radius:999px;background:#fff4d6;color:#835b00;font-size:.78rem;font-weight:800}
+    .document-status.confirmed{background:#e7f3ef;color:#0f6b5a}
+    .document-status.failed{background:#fee4e2;color:#b42318}
+    .scan-status.success{color:#0f6b5a;font-weight:800}
+    .scan-status.error{color:#b42318;font-weight:800}
+  `;
+  document.head.append(style);
+}
+
+function renderDocumentInbox(documents) {
+  const container = $('#documentInboxList');
+  if (!container) return;
+  if (!vehicleId) {
+    container.innerHTML = '<p class="muted-card">Сначала выберите или добавьте автомобиль.</p>';
+    return;
+  }
+  if (!documents.length) {
+    container.innerHTML = '<p class="muted-card">Загруженных документов пока нет.</p>';
+    return;
+  }
+  container.innerHTML = `<div class="document-inbox-list">${documents.map(document => {
+    const statusClass = document.status === 'confirmed' ? 'confirmed' : document.status === 'failed' ? 'failed' : '';
+    const created = document.created_at ? new Date(document.created_at).toLocaleString('ru-RU') : '';
+    return `<article class="document-inbox-item">
+      <div class="doc-icon">▤</div>
+      <div>
+        <small>${escapeHtml(DOCUMENT_TYPE_LABELS[document.document_type] || document.document_type)} · ${formatBytes(document.size_bytes)}</small>
+        <h3>${escapeHtml(document.original_name)}</h3>
+        <small>${escapeHtml(created)}</small>
+        <span class="document-status ${statusClass}">${escapeHtml(DOCUMENT_STATUS_LABELS[document.status] || document.status)}</span>
+      </div>
+    </article>`;
+  }).join('')}</div>`;
+}
+
+async function refreshDocumentInbox() {
+  ensureDocumentInboxUi();
+  if (!vehicleId) {
+    inboxDocuments = [];
+    renderDocumentInbox([]);
+    return;
+  }
+  try {
+    const payload = await api(`/api/vehicles/${vehicleId}/documents`);
+    inboxDocuments = payload.documents || [];
+    renderDocumentInbox(inboxDocuments);
+    $('#documentSummary').textContent = inboxDocuments.length
+      ? `${inboxDocuments.length} входящих документов`
+      : 'Документы пока не добавлены';
+  } catch (error) {
+    $('#documentInboxList').innerHTML = `<p class="muted-card">Не удалось загрузить список: ${escapeHtml(error.message)}</p>`;
+  }
+}
+
 async function openVehicle(id, options = {}) {
   vehicleId = id;
   renderGarageVehicles(garageRows);
-  const data = await api(`/api/vehicles/${id}`);
+  const [data] = await Promise.all([
+    api(`/api/vehicles/${id}`),
+    refreshDocumentInbox(),
+  ]);
   $('#detail').hidden = false;
   $('#vehicle').innerHTML = `
     <article class="passport-card">
@@ -350,20 +453,52 @@ document.addEventListener('click', event => {
   const trigger = event.target.closest('[data-view]');
   if (!trigger) return;
   const view = trigger.dataset.view;
-  if (view === 'passport' && !vehicleId) alert('Сначала добавьте или выберите автомобиль.');
+  if ((view === 'passport' || view === 'scan') && !vehicleId) alert('Сначала добавьте или выберите автомобиль.');
   setView(view);
 });
 
+ensureDocumentInboxUi();
 const startScan = $('#startScan');
 const scanFile = $('#scanFile');
 const scanToManual = $('#scanToManual');
-if (startScan && scanFile) startScan.onclick = () => scanFile.click();
+if (startScan && scanFile) startScan.onclick = () => {
+  if (!vehicleId) return alert('Сначала добавьте или выберите автомобиль.');
+  scanFile.click();
+};
 if (scanToManual) scanToManual.onclick = () => setView('add');
-if (scanFile) scanFile.onchange = () => {
+if (scanFile) scanFile.onchange = async () => {
   const file = scanFile.files?.[0];
-  $('#scanStatus').textContent = file
-    ? `Документ выбран: ${file.name}. Следующий инкремент подключит распознавание и карточку проверки.`
-    : 'AI-распознавание будет подключено отдельным безопасным инкрементом.';
+  const status = $('#scanStatus');
+  if (!file) {
+    status.className = 'scan-status';
+    status.textContent = 'Выберите чек, заказ-наряд, акт, диагностику или смету.';
+    return;
+  }
+  if (!vehicleId) {
+    status.className = 'scan-status error';
+    status.textContent = 'Сначала добавьте или выберите автомобиль.';
+    scanFile.value = '';
+    return;
+  }
+  const documentType = $('#documentType')?.value || 'receipt';
+  const body = new FormData();
+  body.append('document_type', documentType);
+  body.append('file', file);
+  startScan.disabled = true;
+  status.className = 'scan-status';
+  status.textContent = `Загружаем ${file.name}…`;
+  try {
+    const uploaded = await api(`/api/vehicles/${vehicleId}/documents`, { method: 'POST', body });
+    status.className = 'scan-status success';
+    status.textContent = `${uploaded.original_name} загружен в архив. Статус: ${DOCUMENT_STATUS_LABELS[uploaded.status]}.`;
+    scanFile.value = '';
+    await refreshDocumentInbox();
+  } catch (error) {
+    status.className = 'scan-status error';
+    status.textContent = `Не удалось загрузить документ: ${error.message}`;
+  } finally {
+    startScan.disabled = false;
+  }
 };
 
 api('/api/me').then(async () => { await garage(); setView('home'); }).catch(() => {});
