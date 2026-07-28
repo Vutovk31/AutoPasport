@@ -181,9 +181,9 @@ confirmButton.addEventListener('click', async () => {{
     confirmButton.disabled = true;
     confirmButton.textContent = 'Добавлено в историю';
     message.className = 'message success';
-    message.textContent = `Сервисный визит создан. Документ подтверждён. ID визита: ${{result.visit_id}}`;
-    document.querySelector('#homeLink').textContent = 'Открыть историю автомобиля';
-    document.querySelector('#homeLink').href = '/#history';
+    message.textContent = 'Сервисный визит создан. Документ подтверждён.';
+    document.querySelector('#homeLink').textContent = 'Открыть созданный визит';
+    document.querySelector('#homeLink').href = `/visits/${{encodeURIComponent(result.visit_id)}}/confirmed`;
   }} catch (error) {{
     message.className = 'message error';
     message.textContent = `Не удалось подтвердить документ: ${{error.message}}`;
