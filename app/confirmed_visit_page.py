@@ -76,6 +76,6 @@ def confirmed_visit_page(
 <body><main><header><div class="mark">✓</div><div><span class="status">Добавлено в историю</span><h1>{escape(visit.title)}</h1></div></header>
 <section class="card"><h2>{escape(vehicle.make)} {escape(vehicle.model)} · {vehicle.year}</h2><dl><dt>Дата</dt><dd>{visit.visit_date.isoformat()}</dd><dt>Пробег</dt><dd>{mileage}</dd><dt>Сервис / мастер</dt><dd>{location}</dd><dt>Сумма</dt><dd>{_rubles(visit.total_cost_kopecks)}</dd></dl><p>{escape(visit.description) if visit.description else 'Описание не указано.'}</p></section>
 <section class="card"><h2>Работы и детали</h2><ul>{item_html}</ul></section>
-<section class="card"><h2>Исходный документ</h2><p><strong>{escape(document.original_name)}</strong></p><small>{escape(document.document_type)} · SHA-256: {escape(document.sha256[:12])}…</small></section>
+<section class="card"><h2>Исходный документ</h2><p><strong>{escape(document.original_name)}</strong></p><small>{escape(document.document_type)} · SHA-256: {escape(document.sha256[:12])}…</small><a href="/api/documents/{document.id}/file" target="_blank" rel="noopener">Открыть документ</a></section>
 <a href="/">Вернуться в AutoPassport</a><a class="secondary" href="/#history">Открыть всю историю</a></main></body></html>"""
     )
