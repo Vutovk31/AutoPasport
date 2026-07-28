@@ -28,7 +28,7 @@ def test_review_link_uses_real_inbox_api_response_and_no_confirmation():
     script = SCRIPT.read_text(encoding="utf-8")
 
     assert "response.clone().json()" in script
-    assert "/api/vehicles/" in script
+    assert "api\\/vehicles\\/" in script
     assert "latestDocuments" in script
     assert "/confirm" not in script
     assert "/visits" not in script
