@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from .application import *  # noqa: F401,F403
 from .document_draft_review_api import router as document_draft_review_router
 from .document_inbox_api import router as document_inbox_router
+from .document_review_page import router as document_review_page_router
 from .security import current_user, db
 from .storage_quota import owner_storage_usage
 from .share_limits import ShareQuotaExceeded, active_share_links, owner_share_usage
@@ -24,6 +25,7 @@ if not APP_VERSION:
 app.version = APP_VERSION
 app.include_router(document_inbox_router)
 app.include_router(document_draft_review_router)
+app.include_router(document_review_page_router)
 app.router.routes = [route for route in app.router.routes if getattr(route, "path", None) != "/health"]
 
 
