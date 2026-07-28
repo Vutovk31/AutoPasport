@@ -1,10 +1,223 @@
-<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#111827"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/static/icons/icon-192.png"><link rel="stylesheet" href="/static/styles.css"><title>AutoPassport</title></head><body>
-<header><strong>AutoPassport</strong><small>электронный паспорт автомобиля</small><button id="installApp" hidden>Установить</button></header><main>
-<section id="auth" class="card"><h1>Вход владельца</h1><form id="authForm"><input name="email" type="email" placeholder="Email" required><input name="password" type="password" minlength="10" placeholder="Пароль" required><button>Войти / зарегистрироваться</button></form><p id="message" role="status"></p></section>
-<section id="app" hidden><div class="page"><h1>Мой гараж</h1><button id="share" hidden>Ссылка на 1 час</button></div>
-<section id="storageCard" class="card storage-card" aria-live="polite"><div class="storage-head"><div><h2>Хранилище документов</h2><p id="storageSummary">Загрузка данных…</p></div><button id="refreshStorage" type="button" class="secondary">Обновить</button></div><div class="meter-row"><span>Документы</span><strong id="storageAttachments">—</strong></div><progress id="attachmentsProgress" max="100" value="0"></progress><div class="meter-row"><span>Объём</span><strong id="storageBytes">—</strong></div><progress id="bytesProgress" max="100" value="0"></progress><p id="storageWarning" class="warning" hidden></p></section>
-<section id="shareUsageCard" class="card share-card" aria-live="polite"><div class="storage-head"><div><h2>Публичные ссылки</h2><p id="shareSummary">Загрузка данных…</p></div><button id="refreshShares" type="button" class="secondary">Обновить</button></div><div class="meter-row"><span>Активные ссылки</span><strong id="shareLinks">—</strong></div><progress id="shareProgress" max="100" value="0"></progress><p id="shareWarning" class="warning" hidden></p><div id="activeShareList" class="share-list"><p>Загрузка активных ссылок…</p></div></section>
-<form id="vehicleForm" class="card grid"><input name="vin" maxlength="17" placeholder="VIN" required><input name="registration_number" placeholder="Госномер"><input name="make" placeholder="Марка" required><input name="model" placeholder="Модель" required><input name="trim" placeholder="Модификация"><input name="year" type="number" placeholder="Год" required><input name="current_mileage" type="number" placeholder="Пробег" required><input name="purchase_date" type="date"><input name="purchase_mileage" type="number" placeholder="Пробег при покупке"><button>Добавить автомобиль</button></form><div id="garage"></div><section id="detail" hidden><div class="actions"><button id="downloadPdf" type="button">PDF-паспорт</button></div><div id="vehicle" class="card"></div>
-<form id="visitForm" class="card grid"><h2>Ремонтный визит</h2><select name="kind"><option value="repair_visit">Ремонтный визит</option><option value="maintenance_visit">ТО</option><option value="diagnostic_visit">Диагностика</option><option value="estimate_visit">Смета</option><option value="note">Заметка</option></select><input name="visit_date" type="date" required><input name="mileage" type="number" placeholder="Пробег"><input name="title" placeholder="Название визита" required><input name="location" placeholder="Сервис / мастер"><input name="total_cost_rubles" placeholder="Сумма визита, ₽"><select name="total_cost_status"><option value="known">Стоимость известна</option><option value="free">Бесплатно</option><option value="unknown">Неизвестно</option><option value="not_applicable">Не применимо</option></select><label><input name="total_cost_visible_to_public" type="checkbox"> Показывать сумму публично</label><h3>Первая операция / деталь</h3><select name="item_type"><option value="operation">Операция</option><option value="part">Запчасть</option><option value="fluid">Жидкость</option><option value="labor">Работа</option><option value="diagnostic">Диагностика</option></select><input name="item_title" placeholder="Что сделали / установили" required><input name="item_brand" placeholder="Бренд"><input name="item_quantity" placeholder="Количество"><input name="item_unit" placeholder="Ед. изм."><input name="item_cost_rubles" placeholder="Стоимость позиции, ₽"><select name="item_cost_status"><option value="known">Стоимость известна</option><option value="included_in_visit">Входит в сумму визита</option><option value="free">Бесплатно</option><option value="unknown">Неизвестно</option><option value="not_applicable">Не применимо</option></select><button>Добавить визит</button></form>
-<form id="eventForm" class="card grid"><h2>Одиночное событие</h2><select name="kind"><option value="repair">Ремонт</option><option value="maintenance">ТО</option><option value="diagnostic">Диагностика</option><option value="estimate">Смета</option></select><input name="event_date" type="date" required><input name="mileage" type="number" placeholder="Пробег (необязательно)"><input name="title" placeholder="Событие" required><input name="description" placeholder="Описание"><input name="cost_rubles" placeholder="Стоимость, ₽"><label><input name="cost_visible_to_public" type="checkbox"> Показывать стоимость публично</label><button>Добавить событие</button></form><h2>Визиты ремонта</h2><div id="visits"></div><h2>События</h2><div id="timeline"></div></section></section>
-</main><script type="module" src="/static/main.js"></script></body></html>
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0f6b5a">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+  <link rel="stylesheet" href="/static/styles.css">
+  <title>AutoPassport</title>
+</head>
+<body>
+  <main class="phone-shell" aria-label="AutoPassport mobile application">
+    <header class="app-topbar">
+      <div class="brand-mark" aria-hidden="true">✓</div>
+      <div class="brand-copy">
+        <strong>AUTOPASSPORT</strong>
+        <small>электронный паспорт автомобиля</small>
+      </div>
+      <span class="release-pill">MVP · 0.26</span>
+      <button id="installApp" class="icon-button" hidden type="button">Установить</button>
+    </header>
+
+    <section class="demo-banner">
+      <strong>Демо-режим</strong>
+      <span>Записи ниже служат примером интерфейса и не подтверждают факты об автомобиле.</span>
+    </section>
+
+    <section id="auth" class="auth-screen card">
+      <p class="eyebrow">Вход владельца</p>
+      <h1>Ваш цифровой архив автомобиля</h1>
+      <p>Сохраняйте ремонты, чеки, заказ-наряды, диагностику и формируйте паспорт машины.</p>
+      <form id="authForm" class="auth-form">
+        <input name="email" type="email" placeholder="Email" autocomplete="email" required>
+        <input name="password" type="password" minlength="10" placeholder="Пароль от 10 символов" autocomplete="current-password" required>
+        <button type="submit">Войти / зарегистрироваться</button>
+      </form>
+      <p id="message" role="status"></p>
+    </section>
+
+    <section id="app" class="app-shell" hidden>
+      <section class="app-view" data-view-panel="home">
+        <div class="section-kicker">Мой гараж · <span id="garageCount">—</span></div>
+        <div id="garage" class="garage-stack"></div>
+
+        <div class="quick-actions" aria-label="Основные действия">
+          <button type="button" class="quick-action" data-view="history"><span>⌁</span><strong>Пробег</strong></button>
+          <button type="button" class="quick-action primary" data-view="add"><span>＋</span><strong>Запись</strong></button>
+          <button type="button" class="quick-action" data-view="passport"><span>↗</span><strong>Поделиться</strong></button>
+        </div>
+
+        <section class="assistant-card">
+          <div class="assistant-head">
+            <div>
+              <p class="eyebrow">Помощник по автомобилю</p>
+              <h2>На контроле</h2>
+            </div>
+            <span class="soft-badge">1 действие</span>
+          </div>
+          <article class="recommendation-card">
+            <div class="warning-icon">△</div>
+            <small>Основание: заметка владельца</small>
+            <h3>Проверить тормозную систему</h3>
+            <p>Сохранена вибрация при торможении. Это повод для осмотра, а не автоматический диагноз.</p>
+            <button type="button" data-view="add">Открыть рекомендацию <span>›</span></button>
+          </article>
+        </section>
+
+        <section class="archive-section">
+          <p class="eyebrow">Вся жизнь машины</p>
+          <h2>Архив автомобиля</h2>
+          <div class="archive-grid">
+            <button type="button" class="archive-tile" data-view="history"><span class="tile-icon repair">🔧</span><strong>ТО и ремонты</strong><small id="repairCount">—</small></button>
+            <button type="button" class="archive-tile" data-view="history"><span class="tile-icon parts">▣</span><strong>Узлы и детали</strong><small id="partsCount">—</small></button>
+            <button type="button" class="archive-tile" data-view="history"><span class="tile-icon mileage">⌁</span><strong>Пробег</strong><small id="mileageCount">—</small></button>
+            <button type="button" class="archive-tile" data-view="passport"><span class="tile-icon owners">☷</span><strong>Владельцы</strong><small>Не заполнено</small></button>
+          </div>
+          <button type="button" class="document-row" data-view="scan"><span>▤</span><div><strong>Документы и техосмотры</strong><small id="documentSummary">Документы пока не добавлены</small></div><b>›</b></button>
+        </section>
+
+        <section class="latest-section">
+          <div class="section-title-row"><h2>Последняя запись</h2><button type="button" class="text-button" data-view="history">Вся история</button></div>
+          <div id="latestRecord" class="latest-record card muted-card">Выберите автомобиль или добавьте первую запись.</div>
+        </section>
+      </section>
+
+      <section class="app-view" data-view-panel="scan" hidden>
+        <div class="screen-head">
+          <p class="eyebrow">Сканирование</p>
+          <h1>Добавить документ</h1>
+          <p>Чек, заказ-наряд, акт, диагностика или смета сначала попадут в черновик. Паспорт обновляется только после подтверждения владельцем.</p>
+        </div>
+        <section class="scan-card card">
+          <div class="scan-icon">▤</div>
+          <h2>Документ → черновик записи</h2>
+          <p>Сейчас экран подготовлен под будущий AI-парсер. Следующий этап — распознавание текста и заполнение карточки визита.</p>
+          <input id="scanFile" type="file" accept="image/*,application/pdf" capture="environment" hidden>
+          <button id="startScan" type="button">Сфотографировать / загрузить</button>
+          <button id="scanToManual" type="button" class="secondary">Добавить запись вручную</button>
+          <p id="scanStatus" class="scan-status">AI-распознавание будет подключено отдельным безопасным инкрементом.</p>
+        </section>
+        <section class="draft-flow card">
+          <h2>Как это должно работать</h2>
+          <ol>
+            <li>Загрузить чек или заказ-наряд.</li>
+            <li>Распознать дату, пробег, сервис, работы, детали и сумму.</li>
+            <li>Показать карточку проверки.</li>
+            <li>Сохранить подтверждённую запись в историю.</li>
+          </ol>
+        </section>
+      </section>
+
+      <section class="app-view" data-view-panel="add" hidden>
+        <div class="screen-head">
+          <p class="eyebrow">Добавление</p>
+          <h1>Новая запись</h1>
+          <p>Ручные формы временно сохранены как fallback, но спрятаны в сценарии приложения.</p>
+        </div>
+        <details class="card form-drawer" open>
+          <summary>Добавить автомобиль</summary>
+          <form id="vehicleForm" class="form-stack">
+            <input name="vin" maxlength="17" placeholder="VIN" required>
+            <input name="registration_number" placeholder="Госномер">
+            <input name="make" placeholder="Марка" required>
+            <input name="model" placeholder="Модель" required>
+            <input name="trim" placeholder="Модификация">
+            <input name="year" type="number" placeholder="Год" required>
+            <input name="current_mileage" type="number" placeholder="Пробег" required>
+            <input name="purchase_date" type="date">
+            <input name="purchase_mileage" type="number" placeholder="Пробег при покупке">
+            <button type="submit">Сохранить автомобиль</button>
+          </form>
+        </details>
+        <details class="card form-drawer">
+          <summary>Добавить ремонтный визит / ТО</summary>
+          <form id="visitForm" class="form-stack">
+            <select name="kind"><option value="repair_visit">Ремонтный визит</option><option value="maintenance_visit">ТО</option><option value="diagnostic_visit">Диагностика</option><option value="estimate_visit">Смета</option><option value="note">Заметка</option></select>
+            <input name="visit_date" type="date" required>
+            <input name="mileage" type="number" placeholder="Пробег">
+            <input name="title" placeholder="Название визита" required>
+            <input name="location" placeholder="Сервис / мастер">
+            <input name="total_cost_rubles" placeholder="Сумма визита, ₽">
+            <select name="total_cost_status"><option value="known">Стоимость известна</option><option value="free">Бесплатно</option><option value="unknown">Неизвестно</option><option value="not_applicable">Не применимо</option></select>
+            <label class="checkbox-row"><input name="total_cost_visible_to_public" type="checkbox"> Показывать сумму публично</label>
+            <p class="eyebrow">Первая операция / деталь</p>
+            <select name="item_type"><option value="operation">Операция</option><option value="part">Запчасть</option><option value="fluid">Жидкость</option><option value="labor">Работа</option><option value="diagnostic">Диагностика</option></select>
+            <input name="item_title" placeholder="Что сделали / установили" required>
+            <input name="item_brand" placeholder="Бренд">
+            <input name="item_quantity" placeholder="Количество">
+            <input name="item_unit" placeholder="Ед. изм.">
+            <input name="item_cost_rubles" placeholder="Стоимость позиции, ₽">
+            <select name="item_cost_status"><option value="known">Стоимость известна</option><option value="included_in_visit">Входит в сумму визита</option><option value="free">Бесплатно</option><option value="unknown">Неизвестно</option><option value="not_applicable">Не применимо</option></select>
+            <button type="submit">Сохранить визит</button>
+          </form>
+        </details>
+        <details class="card form-drawer">
+          <summary>Добавить одиночное событие</summary>
+          <form id="eventForm" class="form-stack">
+            <select name="kind"><option value="repair">Ремонт</option><option value="maintenance">ТО</option><option value="diagnostic">Диагностика</option><option value="estimate">Смета</option></select>
+            <input name="event_date" type="date" required>
+            <input name="mileage" type="number" placeholder="Пробег (необязательно)">
+            <input name="title" placeholder="Событие" required>
+            <input name="description" placeholder="Описание">
+            <input name="cost_rubles" placeholder="Стоимость, ₽">
+            <label class="checkbox-row"><input name="cost_visible_to_public" type="checkbox"> Показывать стоимость публично</label>
+            <button type="submit">Сохранить событие</button>
+          </form>
+        </details>
+      </section>
+
+      <section class="app-view" data-view-panel="history" hidden>
+        <div class="screen-head">
+          <p class="eyebrow">История</p>
+          <h1>Жизнь автомобиля</h1>
+          <p>Все подтверждённые ремонты, ТО, диагностика, заметки и изменения.</p>
+        </div>
+        <h2>Визиты ремонта</h2>
+        <div id="visits" class="timeline-list"></div>
+        <h2>События</h2>
+        <div id="timeline" class="timeline-list"></div>
+      </section>
+
+      <section class="app-view" data-view-panel="passport" hidden>
+        <div id="detail" hidden>
+          <div class="screen-head">
+            <p class="eyebrow">Паспорт</p>
+            <h1>Электронный паспорт</h1>
+            <p>Сводка автомобиля, документы, публичная ссылка и PDF-отчёт.</p>
+          </div>
+          <div id="vehicle" class="card"></div>
+          <div class="actions">
+            <button id="downloadPdf" type="button">PDF-паспорт</button>
+            <button id="share" type="button" class="secondary">Ссылка на 1 час</button>
+          </div>
+          <section id="storageCard" class="card storage-card" aria-live="polite">
+            <div class="storage-head"><div><h2>Хранилище документов</h2><p id="storageSummary">Загрузка данных…</p></div><button id="refreshStorage" type="button" class="secondary">Обновить</button></div>
+            <div class="meter-row"><span>Документы</span><strong id="storageAttachments">—</strong></div>
+            <progress id="attachmentsProgress" max="100" value="0"></progress>
+            <div class="meter-row"><span>Объём</span><strong id="storageBytes">—</strong></div>
+            <progress id="bytesProgress" max="100" value="0"></progress>
+            <p id="storageWarning" class="warning" hidden></p>
+          </section>
+          <section id="shareUsageCard" class="card share-card" aria-live="polite">
+            <div class="storage-head"><div><h2>Публичные ссылки</h2><p id="shareSummary">Загрузка данных…</p></div><button id="refreshShares" type="button" class="secondary">Обновить</button></div>
+            <div class="meter-row"><span>Активные ссылки</span><strong id="shareLinks">—</strong></div>
+            <progress id="shareProgress" max="100" value="0"></progress>
+            <p id="shareWarning" class="warning" hidden></p>
+            <div id="activeShareList" class="share-list"><p>Загрузка активных ссылок…</p></div>
+          </section>
+        </div>
+      </section>
+
+      <nav class="bottom-nav" aria-label="Главное меню">
+        <button type="button" class="active" data-view="home"><span>⌂</span>Главная</button>
+        <button type="button" data-view="history"><span>↺</span>История</button>
+        <button type="button" class="add-tab" data-view="scan"><span>＋</span>Скан</button>
+        <button type="button" data-view="passport"><span>▤</span>Паспорт</button>
+      </nav>
+    </section>
+  </main>
+  <script type="module" src="/static/main.js"></script>
+</body>
+</html>
