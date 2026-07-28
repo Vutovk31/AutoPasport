@@ -14,6 +14,7 @@ from .application import *  # noqa: F401,F403
 from .confirmed_visit_page import router as confirmed_visit_page_router
 from .document_draft_confirm_api import router as document_draft_confirm_router
 from .document_draft_review_api import router as document_draft_review_router
+from .document_file_api import router as document_file_router
 from .document_inbox_api import router as document_inbox_router
 from .document_review_page import router as document_review_page_router
 from .security import current_user, db
@@ -27,6 +28,7 @@ app.version = APP_VERSION
 app.include_router(document_inbox_router)
 app.include_router(document_draft_review_router)
 app.include_router(document_draft_confirm_router)
+app.include_router(document_file_router)
 app.include_router(document_review_page_router)
 app.include_router(confirmed_visit_page_router)
 app.router.routes = [route for route in app.router.routes if getattr(route, "path", None) != "/health"]
