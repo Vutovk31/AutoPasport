@@ -1,7 +1,7 @@
 """Owner-only mobile review screen for document AI drafts.
 
-The page reads and updates a reviewable draft through the existing API. It does not
-confirm the draft and cannot create vehicle history or service visits.
+The page reads and updates a reviewable draft through the existing API. Vehicle
+history changes only after a separate, explicit owner confirmation action.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ def document_review_page(
     user: User = Depends(current_user),
     session: Session = Depends(db),
 ):
-    """Return a mobile owner-review screen without confirming or mutating history."""
+    """Return the owner review screen with explicit save and confirm actions."""
 
     document = session.get(DocumentInboxDocument, document_id)
     if document is None:
@@ -65,15 +65,16 @@ def document_review_page(
     label{{display:grid;gap:6px;margin:13px 0;font-weight:800}} input,textarea{{width:100%;border:1px solid #cbdcd7;border-radius:14px;padding:12px;font:inherit;background:#fbfdfc}} textarea{{min-height:100px;resize:vertical}}
     small{{display:block;color:#667085;font-weight:500}} .confidence{{font-size:.78rem;color:#667085}}
     button,a{{width:100%;border:0;border-radius:15px;padding:13px 16px;font:inherit;font-weight:900;text-align:center;text-decoration:none;cursor:pointer}}
-    button{{background:#0f6b5a;color:#fff}} button:disabled{{opacity:.55}} a{{display:block;background:#fff;color:#0f6b5a;border:1px solid #bad3cb;margin-top:10px}}
+    button{{background:#0f6b5a;color:#fff}} button:disabled{{opacity:.55}} .confirm{{margin-top:10px;background:#17332d}} a{{display:block;background:#fff;color:#0f6b5a;border:1px solid #bad3cb;margin-top:10px}}
     .message{{min-height:24px;margin:10px 0 0;font-weight:800}} .error{{color:#b42318}} .success{{color:#0f6b5a}}
-    .notice{{background:#fff9e8;border-color:#f0d58a}} .items{{display:grid;gap:10px}} .item{{padding:12px;border:1px solid #dce9e5;border-radius:14px;background:#fbfdfc}}
+    .notice{{background:#fff9e8;border-color:#f0d58a}} .confirm-notice{{margin:14px 0;padding:12px;border-radius:14px;background:#f4f7f6;color:#344f48;font-size:.9rem}}
+    .items{{display:grid;gap:10px}} .item{{padding:12px;border:1px solid #dce9e5;border-radius:14px;background:#fbfdfc}}
   </style>
 </head>
 <body>
 <main>
   <header><div class="mark">✓</div><div><p class="eyebrow">AutoPassport</p><h1>Проверка документа</h1></div></header>
-  <section class="card notice"><span class="status">Требует проверки</span><h2 id="documentName"></h2><p>Исправления сохраняются только в черновик. История автомобиля не изменится до отдельного подтверждения.</p></section>
+  <section class="card notice"><span class="status">Требует проверки</span><h2 id="documentName"></h2><p>Проверьте распознанные данные. До явного подтверждения история автомобиля не изменяется.</p></section>
   <form id="reviewForm" class="card">
     <label>Дата визита <input name="visit_date" type="date"><small class="confidence" data-confidence="visit_date"></small></label>
     <label>Пробег, км <input name="mileage" type="number" min="0"><small class="confidence" data-confidence="mileage"></small></label>
@@ -83,8 +84,10 @@ def document_review_page(
     <label>Извлечённый текст <textarea name="extracted_text"></textarea></label>
     <section><p class="eyebrow">Найденные позиции</p><div id="items" class="items"></div></section>
     <button id="save" type="submit">Сохранить исправления</button>
+    <div class="confirm-notice"><strong>Подтверждение создаст запись в истории.</strong><br>Будет создан сервисный визит, а исходный документ станет его подтверждением.</div>
+    <button id="confirm" class="confirm" type="button">Подтвердить и добавить в историю</button>
     <p id="message" class="message" role="status"></p>
-    <a href="/">Вернуться в AutoPassport</a>
+    <a id="homeLink" href="/">Вернуться в AutoPassport</a>
   </form>
 </main>
 <script>
@@ -92,7 +95,10 @@ const documentId = {document_id_json};
 const documentName = {document_name_json};
 const form = document.querySelector('#reviewForm');
 const message = document.querySelector('#message');
+const saveButton = document.querySelector('#save');
+const confirmButton = document.querySelector('#confirm');
 let draft = null;
+let confirmed = false;
 
 function csrf() {{
   return decodeURIComponent((document.cookie.split('; ').find(x => x.startsWith('autopassport_csrf=')) || '=').split('=')[1]);
@@ -101,10 +107,13 @@ function confidenceLabel(value) {{
   if (typeof value !== 'number') return 'Уверенность не указана';
   return `Уверенность распознавания: ${{Math.round(value * 100)}}%`;
 }}
+function escapeHtml(value) {{
+  return String(value ?? '').replace(/[&<>'"]/g, character => ({{'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}})[character]);
+}}
 function renderItems(items) {{
   const root = document.querySelector('#items');
   if (!Array.isArray(items) || !items.length) {{ root.innerHTML = '<small>Позиции не распознаны.</small>'; return; }}
-  root.innerHTML = items.map((item, index) => `<div class="item"><strong>${{index + 1}}. ${{String(item.title || 'Без названия')}}</strong><small>${{String(item.type || item.item_type || '')}}${{item.brand ? ' · ' + String(item.brand) : ''}}${{item.cost_rubles != null ? ' · ' + String(item.cost_rubles) + ' ₽' : ''}}</small></div>`).join('');
+  root.innerHTML = items.map((item, index) => `<div class="item"><strong>${{index + 1}}. ${{escapeHtml(item.title || 'Без названия')}}</strong><small>${{escapeHtml(item.type || item.item_type || '')}}${{item.brand ? ' · ' + escapeHtml(item.brand) : ''}}${{item.cost_rubles != null ? ' · ' + escapeHtml(item.cost_rubles) + ' ₽' : ''}}</small></div>`).join('');
 }}
 async function request(url, options={{}}) {{
   const method = (options.method || 'GET').toUpperCase();
@@ -126,19 +135,59 @@ function fill(data) {{
   form.elements.extracted_text.value = data.extracted_text || '';
   renderItems(fields.items);
 }}
-form.addEventListener('submit', async event => {{
-  event.preventDefault();
-  const save = document.querySelector('#save'); save.disabled = true;
-  message.className = 'message'; message.textContent = 'Сохраняем исправления…';
-  const proposed = {{...(draft.proposed_fields || {{}})}};
+function proposedFieldsFromForm() {{
+  const proposed = {{...(draft?.proposed_fields || {{}})}};
   for (const name of ['visit_date','service_name','title']) proposed[name] = form.elements[name].value.trim() || null;
   proposed.mileage = form.elements.mileage.value ? Number(form.elements.mileage.value) : null;
   proposed.total_cost_rubles = form.elements.total_cost_rubles.value ? Number(form.elements.total_cost_rubles.value) : null;
+  if (proposed.total_cost_rubles != null && !proposed.total_cost_status) proposed.total_cost_status = 'known';
+  return proposed;
+}}
+async function saveDraft() {{
+  const updated = await request(`/api/documents/${{documentId}}/draft/review`, {{
+    method:'PATCH',
+    headers:{{'Content-Type':'application/json'}},
+    body:JSON.stringify({{extracted_text:form.elements.extracted_text.value,proposed_fields:proposedFieldsFromForm()}})
+  }});
+  fill(updated);
+  return updated;
+}}
+function setBusy(value) {{
+  saveButton.disabled = value;
+  confirmButton.disabled = value || confirmed;
+}}
+form.addEventListener('submit', async event => {{
+  event.preventDefault();
+  setBusy(true);
+  message.className = 'message'; message.textContent = 'Сохраняем исправления…';
   try {{
-    const updated = await request(`/api/documents/${{documentId}}/draft/review`, {{method:'PATCH',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{extracted_text:form.elements.extracted_text.value,proposed_fields:proposed}})}});
-    fill(updated); message.className = 'message success'; message.textContent = 'Исправления сохранены в черновик. История автомобиля не изменена.';
+    await saveDraft();
+    message.className = 'message success'; message.textContent = 'Исправления сохранены в черновик. История автомобиля не изменена.';
   }} catch (error) {{ message.className = 'message error'; message.textContent = `Не удалось сохранить: ${{error.message}}`; }}
-  finally {{ save.disabled = false; }}
+  finally {{ setBusy(false); }}
+}});
+confirmButton.addEventListener('click', async () => {{
+  if (confirmed) return;
+  const approved = window.confirm('Создать сервисный визит из проверенных данных и добавить его в историю автомобиля?');
+  if (!approved) return;
+  setBusy(true);
+  message.className = 'message'; message.textContent = 'Сохраняем исправления и создаём визит…';
+  try {{
+    await saveDraft();
+    const result = await request(`/api/documents/${{documentId}}/draft/confirm`, {{method:'POST'}});
+    confirmed = true;
+    form.querySelectorAll('input,textarea').forEach(element => element.disabled = true);
+    saveButton.hidden = true;
+    confirmButton.disabled = true;
+    confirmButton.textContent = 'Добавлено в историю';
+    message.className = 'message success';
+    message.textContent = `Сервисный визит создан. Документ подтверждён. ID визита: ${{result.visit_id}}`;
+    document.querySelector('#homeLink').textContent = 'Открыть историю автомобиля';
+    document.querySelector('#homeLink').href = '/#history';
+  }} catch (error) {{
+    message.className = 'message error';
+    message.textContent = `Не удалось подтвердить документ: ${{error.message}}`;
+  }} finally {{ setBusy(false); }}
 }});
 request(`/api/documents/${{documentId}}/draft`).then(fill).catch(error => {{ message.className='message error'; message.textContent=`Не удалось загрузить черновик: ${{error.message}}`; form.querySelectorAll('input,textarea,button').forEach(x=>x.disabled=true); }});
 </script>
