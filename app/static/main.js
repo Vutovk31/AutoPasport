@@ -1,8 +1,18 @@
 const $ = selector => document.querySelector(selector);
 let vehicleId = null;
+let garageRows = [];
 
 function csrf() {
   return decodeURIComponent((document.cookie.split('; ').find(x => x.startsWith('autopassport_csrf=')) || '=').split('=')[1]);
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }
 
 function errorMessage(body, status) {
@@ -27,11 +37,31 @@ async function api(url, options = {}) {
   return response.status === 204 ? null : response.json();
 }
 
+function setView(viewName) {
+  document.querySelectorAll('[data-view-panel]').forEach(panel => {
+    panel.hidden = panel.dataset.viewPanel !== viewName;
+  });
+  document.querySelectorAll('.bottom-nav [data-view]').forEach(button => {
+    button.classList.toggle('active', button.dataset.view === viewName);
+  });
+}
+
 function formatBytes(bytes) {
   const value = Number(bytes || 0);
   if (value < 1024) return `${value} Б`;
   if (value < 1024 ** 2) return `${(value / 1024).toFixed(1)} КБ`;
   return `${(value / 1024 ** 2).toFixed(1)} МБ`;
+}
+
+function money(value) {
+  return value === null || value === undefined || value === '' ? '' : `${Number(value).toLocaleString('ru-RU')} ₽`;
+}
+
+function maskVin(vin) {
+  const value = String(vin || '').trim().toUpperCase();
+  if (!value) return 'VIN не указан';
+  if (value.length < 12) return value;
+  return `${value.slice(0, 7)}••••••${value.slice(-4)}`;
 }
 
 function renderStorage(usage) {
@@ -91,9 +121,9 @@ function renderActiveShareLinks(payload) {
   }
   container.innerHTML = links.map(link => {
     const vehicle = link.vehicle || {};
-    const name = `${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.year || ''}`.trim();
-    const plate = vehicle.registration_number ? ` · ${vehicle.registration_number}` : '';
-    return `<article class="share-item"><div><strong>${name}</strong><small>${plate} · осталось ${formatRemaining(link.seconds_remaining)}</small></div><button type="button" class="revoke-share secondary" data-id="${link.id}">Отозвать</button></article>`;
+    const name = `${escapeHtml(vehicle.make)} ${escapeHtml(vehicle.model)} ${escapeHtml(vehicle.year)}`.trim();
+    const plate = vehicle.registration_number ? ` · ${escapeHtml(vehicle.registration_number)}` : '';
+    return `<article class="share-item"><div><strong>${name}</strong><small>${plate} · осталось ${formatRemaining(link.seconds_remaining)}</small></div><button type="button" class="revoke-share secondary" data-id="${escapeHtml(link.id)}">Отозвать</button></article>`;
   }).join('');
   document.querySelectorAll('.revoke-share').forEach(button => {
     button.onclick = async () => {
@@ -123,34 +153,185 @@ async function refreshShares() {
   }
 }
 
+function renderGarageVehicles(rows) {
+  $('#garageCount').textContent = `${rows.length}`;
+  if (!rows.length) {
+    $('#garage').innerHTML = '<button type="button" class="vehicle-card" data-view="add"><div class="vehicle-card-top"><div class="car-icon">＋</div><div><small>Автомобиль</small><h2>Добавьте авто</h2><small>VIN, пробег и базовые данные</small></div></div></button>';
+    return;
+  }
+  $('#garage').innerHTML = rows.map(v => `
+    <button type="button" class="vehicle-card ${String(v.id) === String(vehicleId) ? 'active' : ''}" data-id="${escapeHtml(v.id)}">
+      <div class="vehicle-card-top">
+        <div class="car-icon">▣</div>
+        <div>
+          <small>Автомобиль</small>
+          <h2>${escapeHtml(v.make)} ${escapeHtml(v.model)}</h2>
+          <small>${escapeHtml(v.trim || '')} · ${escapeHtml(v.year || '')}</small>
+        </div>
+      </div>
+      <div class="vehicle-meta">
+        <div><span>VIN</span><strong>${escapeHtml(maskVin(v.vin))}</strong></div>
+        <div><span>Текущий пробег</span><strong>${Number(v.current_mileage || 0).toLocaleString('ru-RU')} км</strong></div>
+      </div>
+    </button>
+  `).join('');
+  document.querySelectorAll('.vehicle-card[data-id]').forEach(button => button.onclick = () => openVehicle(button.dataset.id));
+}
+
 async function garage() {
-  const rows = await api('/api/vehicles');
+  garageRows = await api('/api/vehicles');
   $('#app').hidden = false;
   $('#auth').hidden = true;
-  $('#garage').innerHTML = rows.map(v => `<button class="vehicle" data-id="${v.id}"><b>${v.make} ${v.model}</b><span>${v.current_mileage.toLocaleString('ru-RU')} км</span></button>`).join('') || '<p>Добавьте первый автомобиль.</p>';
-  document.querySelectorAll('.vehicle').forEach(button => button.onclick = () => openVehicle(button.dataset.id));
+  renderGarageVehicles(garageRows);
   await Promise.all([refreshStorage(), refreshShares()]);
+  if (!vehicleId && garageRows[0]) await openVehicle(garageRows[0].id, { stayOnCurrentView: true });
+  if (!garageRows.length) setView('add');
 }
 
-function money(value) { return value === null || value === undefined ? '' : `${Number(value).toLocaleString('ru-RU')} ₽`; }
+function renderVisitCard(v) {
+  const items = (v.items || []).map(i => `<li>${escapeHtml(i.title)} — ${escapeHtml(i.cost_status)}${i.cost_rubles ? ` · ${money(i.cost_rubles)}` : ''}</li>`).join('');
+  return `
+    <article class="card timeline-card">
+      <span class="tile-icon repair">🔧</span>
+      <div>
+        <small>${escapeHtml(v.visit_date)} · ${escapeHtml(v.trust_level)} · rev.${escapeHtml(v.revision)}</small>
+        <h3>${escapeHtml(v.title)}</h3>
+        <p>${escapeHtml(v.location || '')}</p>
+        <p>${v.mileage ? Number(v.mileage).toLocaleString('ru-RU') + ' км' : ''} ${money(v.total_cost_rubles)}</p>
+        ${items ? `<ul>${items}</ul>` : ''}
+      </div>
+      <span>›</span>
+      <button class="delete-visit" data-id="${escapeHtml(v.id)}" type="button">Скрыть визит</button>
+    </article>
+  `;
+}
 
-async function openVehicle(id) {
+function renderEventCard(e) {
+  return `
+    <article class="card timeline-card">
+      <span class="tile-icon mileage">⌁</span>
+      <div>
+        <small>${escapeHtml(e.event_date)} · ${escapeHtml(e.trust_level)} · rev.${escapeHtml(e.revision)}</small>
+        <h3>${escapeHtml(e.title)}</h3>
+        <p>${escapeHtml(e.description || '')}</p>
+        <p>${e.mileage ? Number(e.mileage).toLocaleString('ru-RU') + ' км' : ''}</p>
+      </div>
+      <span>›</span>
+      <button class="delete" data-id="${escapeHtml(e.id)}" type="button">Скрыть событие</button>
+    </article>
+  `;
+}
+
+function renderArchiveSummary(data) {
+  const visits = data.visits || [];
+  const events = data.events || [];
+  const itemCount = visits.reduce((sum, visit) => sum + (visit.items || []).length, 0);
+  const documentCount = visits.reduce((sum, visit) => sum + (visit.attachments || []).length, 0)
+    + events.reduce((sum, event) => sum + (event.attachments || []).length, 0);
+  $('#repairCount').textContent = `${visits.length} записей`;
+  $('#partsCount').textContent = `${itemCount} записей`;
+  $('#mileageCount').textContent = `${visits.filter(v => v.mileage).length + events.filter(e => e.mileage).length} отметки`;
+  $('#documentSummary').textContent = documentCount ? `${documentCount} документов добавлено` : 'Документы пока не добавлены';
+}
+
+function renderLatestRecord(data) {
+  const visits = data.visits || [];
+  const events = data.events || [];
+  const latestVisit = visits[0] ? { type: 'visit', date: visits[0].visit_date, mileage: visits[0].mileage, title: visits[0].title } : null;
+  const latestEvent = events[0] ? { type: 'event', date: events[0].event_date, mileage: events[0].mileage, title: events[0].title } : null;
+  const latest = [latestVisit, latestEvent].filter(Boolean).sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
+  if (!latest) {
+    $('#latestRecord').innerHTML = 'Записей пока нет. Добавьте первый ремонт, ТО или документ.';
+    return;
+  }
+  $('#latestRecord').innerHTML = `<article class="timeline-card"><span class="tile-icon repair">🔧</span><div><small>${escapeHtml(latest.date)}${latest.mileage ? ` · ${Number(latest.mileage).toLocaleString('ru-RU')} км` : ''}</small><h3>${escapeHtml(latest.title)}</h3></div><span>›</span></article>`;
+}
+
+async function openVehicle(id, options = {}) {
   vehicleId = id;
+  renderGarageVehicles(garageRows);
   const data = await api(`/api/vehicles/${id}`);
   $('#detail').hidden = false;
-  $('#share').hidden = false;
-  $('#vehicle').innerHTML = `<h2>${data.vehicle.make} ${data.vehicle.model} ${data.vehicle.year}</h2><p>${data.vehicle.vin} · ${data.vehicle.registration_number || ''} · ${data.vehicle.current_mileage.toLocaleString('ru-RU')} км</p>`;
-  $('#visits').innerHTML = (data.visits || []).map(v => `<article class="card"><small>${v.visit_date} · ${v.trust_level} · rev.${v.revision}</small><h3>${v.title}</h3><p>${v.location || ''}</p><p>${v.mileage ? v.mileage.toLocaleString('ru-RU') + ' км' : ''} ${money(v.total_cost_rubles)}</p><ul>${v.items.map(i => `<li>${i.title} — ${i.cost_status}${i.cost_rubles ? ` · ${money(i.cost_rubles)}` : ''}</li>`).join('')}</ul><button class="delete-visit" data-id="${v.id}">Скрыть визит</button></article>`).join('') || '<p>Визитов пока нет.</p>';
-  $('#timeline').innerHTML = data.events.map(e => `<article class="card"><small>${e.event_date} · ${e.trust_level} · rev.${e.revision}</small><h3>${e.title}</h3><p>${e.description}</p><p>${e.mileage ? e.mileage.toLocaleString('ru-RU') + ' км' : ''}</p><button class="delete" data-id="${e.id}">Скрыть событие</button></article>`).join('') || '<p>Событий пока нет.</p>';
+  $('#vehicle').innerHTML = `
+    <article class="passport-card">
+      <h2>${escapeHtml(data.vehicle.make)} ${escapeHtml(data.vehicle.model)} ${escapeHtml(data.vehicle.year)}</h2>
+      <p>${escapeHtml(maskVin(data.vehicle.vin))} · ${escapeHtml(data.vehicle.registration_number || 'без госномера')} · ${Number(data.vehicle.current_mileage || 0).toLocaleString('ru-RU')} км</p>
+      <div class="vehicle-meta">
+        <div><span>Паспорт</span><strong>Личный архив</strong></div>
+        <div><span>Доверие</span><strong>По документам</strong></div>
+      </div>
+    </article>
+  `;
+  $('#visits').innerHTML = (data.visits || []).map(renderVisitCard).join('') || '<p class="muted-card card">Визитов пока нет.</p>';
+  $('#timeline').innerHTML = (data.events || []).map(renderEventCard).join('') || '<p class="muted-card card">Событий пока нет.</p>';
+  renderArchiveSummary(data);
+  renderLatestRecord(data);
   document.querySelectorAll('.delete').forEach(button => button.onclick = async () => { await api(`/api/events/${button.dataset.id}`, { method: 'DELETE' }); await openVehicle(id); await refreshStorage(); });
   document.querySelectorAll('.delete-visit').forEach(button => button.onclick = async () => { await api(`/api/visits/${button.dataset.id}`, { method: 'DELETE' }); await openVehicle(id); await refreshStorage(); });
+  if (!options.stayOnCurrentView) setView('home');
 }
 
-$('#authForm').onsubmit = async event => { event.preventDefault(); const body = new FormData(event.target); try { await api('/api/auth/login', { method: 'POST', body }); } catch (_) { await api('/api/auth/register', { method: 'POST', body }); } await garage(); };
-$('#vehicleForm').onsubmit = async event => { event.preventDefault(); const vehicle = await api('/api/vehicles', { method: 'POST', body: new FormData(event.target) }); event.target.reset(); await garage(); await openVehicle(vehicle.id); };
-$('#eventForm').onsubmit = async event => { event.preventDefault(); await api(`/api/vehicles/${vehicleId}/events`, { method: 'POST', body: new FormData(event.target) }); event.target.reset(); await openVehicle(vehicleId); };
-$('#visitForm').onsubmit = async event => { event.preventDefault(); const f = new FormData(event.target); const body = { kind: f.get('kind'), visit_date: f.get('visit_date'), mileage: f.get('mileage') || null, title: f.get('title'), location: f.get('location'), total_cost_rubles: f.get('total_cost_rubles') || null, total_cost_status: f.get('total_cost_status'), total_cost_visible_to_public: f.get('total_cost_visible_to_public') === 'on', items: [{ item_type: f.get('item_type'), title: f.get('item_title'), brand: f.get('item_brand'), quantity: f.get('item_quantity'), unit: f.get('item_unit'), cost_rubles: f.get('item_cost_rubles') || null, cost_status: f.get('item_cost_status') }] }; await api(`/api/vehicles/${vehicleId}/visits`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); event.target.reset(); await openVehicle(vehicleId); };
+$('#authForm').onsubmit = async event => {
+  event.preventDefault();
+  const body = new FormData(event.target);
+  try {
+    await api('/api/auth/login', { method: 'POST', body });
+  } catch (_) {
+    await api('/api/auth/register', { method: 'POST', body });
+  }
+  await garage();
+  setView('home');
+};
+
+$('#vehicleForm').onsubmit = async event => {
+  event.preventDefault();
+  const vehicle = await api('/api/vehicles', { method: 'POST', body: new FormData(event.target) });
+  event.target.reset();
+  await garage();
+  await openVehicle(vehicle.id);
+  setView('home');
+};
+
+$('#eventForm').onsubmit = async event => {
+  event.preventDefault();
+  if (!vehicleId) return alert('Сначала выберите автомобиль.');
+  await api(`/api/vehicles/${vehicleId}/events`, { method: 'POST', body: new FormData(event.target) });
+  event.target.reset();
+  await openVehicle(vehicleId);
+  setView('history');
+};
+
+$('#visitForm').onsubmit = async event => {
+  event.preventDefault();
+  if (!vehicleId) return alert('Сначала выберите автомобиль.');
+  const f = new FormData(event.target);
+  const body = {
+    kind: f.get('kind'),
+    visit_date: f.get('visit_date'),
+    mileage: f.get('mileage') || null,
+    title: f.get('title'),
+    location: f.get('location'),
+    total_cost_rubles: f.get('total_cost_rubles') || null,
+    total_cost_status: f.get('total_cost_status'),
+    total_cost_visible_to_public: f.get('total_cost_visible_to_public') === 'on',
+    items: [{
+      item_type: f.get('item_type'),
+      title: f.get('item_title'),
+      brand: f.get('item_brand'),
+      quantity: f.get('item_quantity'),
+      unit: f.get('item_unit'),
+      cost_rubles: f.get('item_cost_rubles') || null,
+      cost_status: f.get('item_cost_status'),
+    }],
+  };
+  await api(`/api/vehicles/${vehicleId}/visits`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  event.target.reset();
+  await openVehicle(vehicleId);
+  setView('history');
+};
+
 $('#share').onclick = async () => {
+  if (!vehicleId) return alert('Сначала выберите автомобиль.');
   try {
     const share = await api(`/api/vehicles/${vehicleId}/share`, { method: 'POST' });
     await navigator.clipboard.writeText(share.url).catch(() => {});
@@ -161,10 +342,31 @@ $('#share').onclick = async () => {
     alert(error.message);
   }
 };
+
 $('#refreshStorage').onclick = refreshStorage;
 $('#refreshShares').onclick = refreshShares;
 
-api('/api/me').then(garage).catch(() => {});
+document.addEventListener('click', event => {
+  const trigger = event.target.closest('[data-view]');
+  if (!trigger) return;
+  const view = trigger.dataset.view;
+  if (view === 'passport' && !vehicleId) alert('Сначала добавьте или выберите автомобиль.');
+  setView(view);
+});
+
+const startScan = $('#startScan');
+const scanFile = $('#scanFile');
+const scanToManual = $('#scanToManual');
+if (startScan && scanFile) startScan.onclick = () => scanFile.click();
+if (scanToManual) scanToManual.onclick = () => setView('add');
+if (scanFile) scanFile.onchange = () => {
+  const file = scanFile.files?.[0];
+  $('#scanStatus').textContent = file
+    ? `Документ выбран: ${file.name}. Следующий инкремент подключит распознавание и карточку проверки.`
+    : 'AI-распознавание будет подключено отдельным безопасным инкрементом.';
+};
+
+api('/api/me').then(async () => { await garage(); setView('home'); }).catch(() => {});
 
 if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js').catch(() => {}));
 let deferredInstallPrompt = null;
