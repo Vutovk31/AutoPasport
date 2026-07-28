@@ -38,8 +38,8 @@ def test_review_screen_exposes_core_fields_and_confidence():
         "total_cost_rubles",
         "title",
     ):
-        assert f'name=\\"{field}\\"' in page
-        assert f'data-confidence=\\"{field}\\"' in page
+        assert f'name="{field}"' in page
+        assert f'data-confidence="{field}"' in page
 
     assert "confidenceLabel" in page
     assert "Math.round(value * 100)" in page
