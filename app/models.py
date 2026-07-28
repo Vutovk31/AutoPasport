@@ -130,6 +130,31 @@ class DocumentInboxDocument(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class DocumentAIDraft(Base):
+    """Owner-reviewable structured draft produced from one inbox document.
+
+    JSON payloads are stored as text deliberately: the first draft boundary must be
+    portable across SQLite and a future external database. No draft mutates vehicle
+    history until a separate confirmation workflow creates or updates a service visit.
+    """
+
+    __tablename__ = "document_ai_drafts"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    document_id: Mapped[str] = mapped_column(
+        ForeignKey("document_inbox.id", ondelete="CASCADE"), unique=True, index=True
+    )
+    owner_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    vehicle_id: Mapped[str] = mapped_column(ForeignKey("vehicles.id", ondelete="CASCADE"), index=True)
+    extracted_text: Mapped[str] = mapped_column(Text, default="")
+    proposed_fields_json: Mapped[str] = mapped_column(Text, default="{}")
+    confidence_json: Mapped[str] = mapped_column(Text, default="{}")
+    parser_name: Mapped[str] = mapped_column(String(80))
+    parser_version: Mapped[str] = mapped_column(String(40))
+    status: Mapped[str] = mapped_column(String(32), default="needs_review", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class EventAudit(Base):
     __tablename__ = "event_audits"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
