@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from uuid import uuid4
 from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
@@ -6,6 +6,9 @@ from .database import Base
 
 
 def uid(): return str(uuid4())
+
+
+def utcnow(): return datetime.now(timezone.utc)
 
 
 class User(Base):
@@ -107,6 +110,24 @@ class Attachment(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     purged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     purge_reason: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+
+class DocumentInboxDocument(Base):
+    __tablename__ = "document_inbox"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    owner_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    vehicle_id: Mapped[str] = mapped_column(ForeignKey("vehicles.id", ondelete="CASCADE"), index=True)
+    linked_visit_id: Mapped[str | None] = mapped_column(ForeignKey("service_visits.id", ondelete="SET NULL"), index=True, nullable=True)
+    document_type: Mapped[str] = mapped_column(String(32))
+    original_name: Mapped[str] = mapped_column(String(255))
+    stored_name: Mapped[str] = mapped_column(String(255), unique=True)
+    media_type: Mapped[str] = mapped_column(String(100))
+    size_bytes: Mapped[int] = mapped_column(Integer)
+    sha256: Mapped[str] = mapped_column(String(64), index=True)
+    status: Mapped[str] = mapped_column(String(32), default="uploaded", index=True)
+    failure_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
 class EventAudit(Base):
