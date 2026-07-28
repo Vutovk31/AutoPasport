@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from .application import *  # noqa: F401,F403
+from .document_inbox_api import router as document_inbox_router
 from .security import current_user, db
 from .storage_quota import owner_storage_usage
 from .share_limits import ShareQuotaExceeded, active_share_links, owner_share_usage
@@ -20,6 +21,7 @@ APP_VERSION = (Path(__file__).resolve().parents[1] / "VERSION").read_text(encodi
 if not APP_VERSION:
     raise RuntimeError("VERSION must not be empty")
 app.version = APP_VERSION
+app.include_router(document_inbox_router)
 app.router.routes = [route for route in app.router.routes if getattr(route, "path", None) != "/health"]
 
 
