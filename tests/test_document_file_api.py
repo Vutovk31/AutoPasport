@@ -25,11 +25,16 @@ def test_document_file_endpoint_is_owner_only_and_inline():
     assert '"Cache-Control": "private, no-store"' in source
 
 
-def test_document_file_path_cannot_escape_storage_root():
+def test_document_file_delivery_uses_storage_boundary():
     source = _read("app/document_file_api.py")
-    assert "candidate = (STORAGE_ROOT / stored_name).resolve()" in source
-    assert "candidate.relative_to(STORAGE_ROOT)" in source
-    assert "if not path.is_file()" in source
+    storage = _read("app/document_storage.py")
+
+    assert "read_document(document.stored_name)" in source
+    assert "resolve_storage_key" not in source
+    assert "FileResponse" not in source
+    assert "def read(self, storage_key: str) -> bytes:" in storage
+    assert "if not path.is_file() or path.is_symlink():" in storage
+    assert 'raise DocumentStorageError("Document file not found")' in storage
 
 
 def test_confirmed_visit_links_real_document_id():
