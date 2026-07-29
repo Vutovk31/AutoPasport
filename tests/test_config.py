@@ -10,6 +10,11 @@ def config(**overrides):
         "environment": "development",
         "database_url": "sqlite:///./data/autopassport.db",
         "storage_path": Path("data/storage"),
+        "storage_backend": "local",
+        "s3_bucket": "",
+        "s3_endpoint_url": "",
+        "s3_region": "",
+        "s3_prefix": "",
         "backup_path": Path("data/backups"),
         "public_base_url": "http://127.0.0.1:8000",
         "admin_backup_token": "",
@@ -49,9 +54,58 @@ def test_production_configuration_can_pass():
     assert validate_runtime_config(candidate) == []
 
 
-def test_storage_and_backup_directories_must_differ():
+def test_storage_and_backup_directories_must_differ_for_local_backend():
     errors = validate_runtime_config(config(storage_path=Path("data/shared"), backup_path=Path("data/shared")))
     assert "STORAGE_PATH and BACKUP_PATH must be different directories" in errors
+
+
+def test_s3_backend_requires_bucket():
+    errors = validate_runtime_config(config(storage_backend="s3"))
+    assert "S3_BUCKET is required for STORAGE_BACKEND=s3" in errors
+
+
+def test_s3_backend_accepts_private_https_endpoint_and_safe_prefix():
+    candidate = config(
+        storage_backend="s3",
+        s3_bucket="autopassport-private",
+        s3_endpoint_url="https://storage.example.com",
+        s3_region="ru-central1",
+        s3_prefix="documents/production",
+    )
+    assert validate_runtime_config(candidate) == []
+
+
+def test_s3_prefix_rejects_path_traversal():
+    errors = validate_runtime_config(
+        config(storage_backend="s3", s3_bucket="autopassport-private", s3_prefix="documents/../private")
+    )
+    assert "S3_PREFIX must be a safe relative object prefix" in errors
+
+
+def test_s3_endpoint_must_be_absolute_and_https_in_production():
+    malformed = validate_runtime_config(
+        config(storage_backend="s3", s3_bucket="bucket", s3_endpoint_url="storage.example.com")
+    )
+    assert "S3_ENDPOINT_URL must be an absolute http(s) URL" in malformed
+
+    production = validate_runtime_config(
+        config(
+            environment="production",
+            database_url="sqlite:////app/data/autopassport.db",
+            public_base_url="https://autopassport.example",
+            admin_backup_token="x" * 48,
+            cookie_secure=True,
+            storage_backend="s3",
+            s3_bucket="bucket",
+            s3_endpoint_url="http://storage.example.com",
+        )
+    )
+    assert "Production S3_ENDPOINT_URL must use HTTPS" in production
+
+
+def test_unknown_storage_backend_is_rejected():
+    errors = validate_runtime_config(config(storage_backend="azure"))
+    assert "STORAGE_BACKEND must be local or s3" in errors
 
 
 def test_mvp_upload_limit_is_bounded():
