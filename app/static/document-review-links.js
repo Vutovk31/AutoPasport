@@ -1,4 +1,5 @@
 import './scan-review.js';
+import './scan-upload-receipt.js';
 
 const REVIEW_STATUS = 'needs_review';
 const REVIEW_LABEL = 'Проверить данные';
