@@ -17,12 +17,14 @@ def test_review_screen_is_registered_and_owner_only():
     assert "app.include_router(document_review_page_router)" in main
 
 
-def test_review_screen_loads_and_updates_existing_draft_api():
+def test_review_screen_loads_updates_and_confirms_existing_draft_api():
     page = PAGE.read_text(encoding="utf-8")
 
     assert "`/api/documents/${documentId}/draft`" in page
     assert "`/api/documents/${documentId}/draft/review`" in page
+    assert "`/api/documents/${documentId}/draft/confirm`" in page
     assert "method:'PATCH'" in page
+    assert "method:'POST'" in page
     assert "X-CSRF-Token" in page
     assert "proposed_fields" in page
     assert "extracted_text" in page
@@ -46,10 +48,14 @@ def test_review_screen_exposes_core_fields_and_confidence():
     assert "renderItems(fields.items)" in page
 
 
-def test_review_screen_cannot_confirm_or_create_history():
+def test_review_screen_preserves_explicit_owner_confirmation_boundary():
     page = PAGE.read_text(encoding="utf-8")
 
-    assert "История автомобиля не изменится до отдельного подтверждения" in page
-    assert "/confirm" not in page
-    assert "/api/vehicles/${" not in page
+    assert "До явного подтверждения история автомобиля не изменяется" in page
+    assert "Подтверждение создаст запись в истории" in page
+    assert "window.confirm(" in page
+    assert "await saveDraft()" in page
+    assert "if (confirmed) return" in page
+    assert "confirmed = true" in page
+    assert "encodeURIComponent(result.visit_id)" in page
     assert "service_visits" not in page
