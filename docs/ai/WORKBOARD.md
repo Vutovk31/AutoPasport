@@ -6,7 +6,8 @@ Canonical branch: `main`
 
 ## Current main
 
-Commit reviewed: `7d0252c88581e11c271ffb5285933b786b6080a6`
+Product-code commit reviewed: `7d0252c88581e11c271ffb5285933b786b6080a6`
+Governance baseline before this update: `1eb07755666a5ac2e86d96e97fdef0e3aeafb571`
 Release gate: **BLOCKED**
 Confirmed CI result: `20 failed, 222 passed, 1 warning`.
 Failed release step: `test_suite`.
@@ -59,6 +60,21 @@ Acceptance criteria:
 
 ## MVE / UX
 
+### Reviewed result
+
+Prior task: `MVE-DOC-INBOX-001`
+Commit presented: `c0b746788bf32ca416a6db5fd6171efc03dd6129`
+Decision: **RETURNED FOR REWORK — NOT MERGED**
+
+Reasons:
+- the implementation is a detached `app/static/mve/index.html` page with no FastAPI route or integration into the existing Mobile App Shell;
+- the branch reports only static contract checks and has no confirmed CI status;
+- it duplicates navigation and visual tokens instead of consolidating the existing application shell;
+- current `main` already has release-blocking review/confirmation UI regressions that must be repaired first;
+- the prototype may be reused as design input, but must not be copied into `main` as a second standalone application.
+
+### Active assignment
+
 Task: `MVE-026-CI-01`
 Status: assigned
 Branch: `agent/mve-ui`
@@ -76,19 +92,20 @@ Allowed tests:
 - related frontend contract tests only
 
 Acceptance criteria:
-1. Keep the mobile review screen connected to the real draft GET/PATCH/confirm endpoints.
-2. After confirmation, open the exact created visit returned by the API; do not depend on a hash-only redirect.
-3. Keep the explicit warning that history is unchanged until owner confirmation.
-4. Prevent repeat confirmation while a request is in progress.
-5. Do not add mock OCR, fake vehicle data, or synthetic parser results.
-6. Run the assigned pytest set and record the exact command and result in `docs/ai/MVE_HANDOFF.md`.
-7. Do not touch SQLAlchemy models, migrations, parser runner, storage, or readiness.
-8. Do not merge into `main`.
+1. First synchronize the branch with current `main` while preserving the prior prototype commit for reference.
+2. Keep the mobile review screen connected to the real draft GET/PATCH/confirm endpoints.
+3. After confirmation, open the exact created visit returned by the API; do not depend on a hash-only redirect.
+4. Keep the explicit warning that history is unchanged until owner confirmation.
+5. Prevent repeat confirmation while a request is in progress.
+6. Do not add mock OCR, fake vehicle data, or synthetic parser results.
+7. Run the assigned pytest set and record the exact command and result in `docs/ai/MVE_HANDOFF.md`.
+8. Do not touch SQLAlchemy models, migrations, parser runner, storage, or readiness.
+9. Do not merge into `main`.
 
 ## Integration queue
 
 - Backend: waiting for `APP-026-CI-01` handoff.
-- MVE: waiting for `MVE-026-CI-01` handoff.
+- MVE: prior prototype returned; waiting for `MVE-026-CI-01` handoff.
 - Main: feature merges frozen until CI regressions are resolved.
 
 ## Known blockers
@@ -100,4 +117,4 @@ Acceptance criteria:
 
 ## Integrator next action
 
-Review the first completed worker handoff, compare its branch against `main`, verify actual test evidence, and merge only the smallest green increment.
+Review the first completed CI-repair handoff, compare its branch against `main`, verify actual test evidence, and merge only the smallest green increment.
