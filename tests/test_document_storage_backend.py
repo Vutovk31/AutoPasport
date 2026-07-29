@@ -30,10 +30,18 @@ def test_explicit_local_backend_preserves_compatibility_functions(tmp_path, monk
     assert not destination.exists()
 
 
-def test_unsupported_backend_fails_fast(monkeypatch):
+def test_s3_backend_requires_explicit_bucket(monkeypatch):
     monkeypatch.setenv("STORAGE_BACKEND", "s3")
+    monkeypatch.delenv("S3_BUCKET", raising=False)
 
-    with pytest.raises(document_storage.DocumentStorageError, match="Unsupported STORAGE_BACKEND: s3"):
+    with pytest.raises(document_storage.DocumentStorageError, match="S3_BUCKET is required"):
+        document_storage.get_document_storage()
+
+
+def test_unsupported_backend_fails_fast(monkeypatch):
+    monkeypatch.setenv("STORAGE_BACKEND", "azure")
+
+    with pytest.raises(document_storage.DocumentStorageError, match="Unsupported STORAGE_BACKEND: azure"):
         document_storage.get_document_storage()
 
 
