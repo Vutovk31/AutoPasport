@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import os
 from urllib.parse import urlparse
 
@@ -15,6 +15,11 @@ class RuntimeConfig:
     environment: str
     database_url: str
     storage_path: Path
+    storage_backend: str
+    s3_bucket: str
+    s3_endpoint_url: str
+    s3_region: str
+    s3_prefix: str
     backup_path: Path
     public_base_url: str
     admin_backup_token: str
@@ -51,6 +56,11 @@ def load_runtime_config() -> RuntimeConfig:
         environment=environment,
         database_url=os.getenv("DATABASE_URL", "sqlite:///./data/autopassport.db").strip(),
         storage_path=Path(os.getenv("STORAGE_PATH", "./data/storage")).expanduser(),
+        storage_backend=os.getenv("STORAGE_BACKEND", "local").strip().lower(),
+        s3_bucket=os.getenv("S3_BUCKET", "").strip(),
+        s3_endpoint_url=os.getenv("S3_ENDPOINT_URL", "").strip().rstrip("/"),
+        s3_region=os.getenv("S3_REGION", "").strip(),
+        s3_prefix=os.getenv("S3_PREFIX", "").strip().strip("/"),
         backup_path=Path(os.getenv("BACKUP_PATH", "./data/backups")).expanduser(),
         public_base_url=os.getenv("PUBLIC_BASE_URL", "http://127.0.0.1:8000").strip().rstrip("/"),
         admin_backup_token=os.getenv("ADMIN_BACKUP_TOKEN", "").strip(),
@@ -62,6 +72,13 @@ def load_runtime_config() -> RuntimeConfig:
         max_active_share_links_per_owner=_required_int("MAX_ACTIVE_SHARE_LINKS_PER_OWNER", 10),
         attachment_retention_days=_required_int("ATTACHMENT_RETENTION_DAYS", 30),
     )
+
+
+def _is_safe_s3_prefix(prefix: str) -> bool:
+    if not prefix:
+        return True
+    path = PurePosixPath(prefix.replace("\\", "/"))
+    return not path.is_absolute() and all(part not in {"", ".", ".."} for part in path.parts)
 
 
 def validate_runtime_config(config: RuntimeConfig) -> list[str]:
@@ -76,8 +93,22 @@ def validate_runtime_config(config: RuntimeConfig) -> list[str]:
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             errors.append("PUBLIC_BASE_URL must be an absolute http(s) URL")
 
-    if config.storage_path.resolve() == config.backup_path.resolve():
-        errors.append("STORAGE_PATH and BACKUP_PATH must be different directories")
+    if config.storage_backend not in {"local", "s3"}:
+        errors.append("STORAGE_BACKEND must be local or s3")
+    elif config.storage_backend == "local":
+        if config.storage_path.resolve() == config.backup_path.resolve():
+            errors.append("STORAGE_PATH and BACKUP_PATH must be different directories")
+    else:
+        if not config.s3_bucket:
+            errors.append("S3_BUCKET is required for STORAGE_BACKEND=s3")
+        if not _is_safe_s3_prefix(config.s3_prefix):
+            errors.append("S3_PREFIX must be a safe relative object prefix")
+        if config.s3_endpoint_url:
+            endpoint = urlparse(config.s3_endpoint_url)
+            if endpoint.scheme not in {"http", "https"} or not endpoint.netloc:
+                errors.append("S3_ENDPOINT_URL must be an absolute http(s) URL")
+            elif config.is_production and endpoint.scheme != "https":
+                errors.append("Production S3_ENDPOINT_URL must use HTTPS")
 
     if config.max_upload_bytes > 25 * 1024 * 1024:
         errors.append("MAX_UPLOAD_BYTES must not exceed 25 MiB in MVP")
