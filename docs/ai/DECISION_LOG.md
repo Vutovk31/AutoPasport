@@ -50,3 +50,14 @@ Status: accepted
 
 Decision:
 Project instructions may refer to `Vutovk31/AutoPasport`. The GitHub connector resolves that repository to the current canonical repository `Vutovk31/AutoPasport0.1`. All branch and commit operations must verify the resolved repository before writing.
+
+## ADR-026-006 — MVE work must extend the canonical application shell
+
+Date: 2026-07-29
+Status: accepted
+
+Decision:
+A standalone static prototype is design input, not an integrable product increment. MVE changes must extend or consolidate the existing Mobile App Shell, use real routes and API contracts, and include verifiable navigation into the active application. A second detached shell must not be merged into `main`.
+
+Context:
+Commit `c0b746788bf32ca416a6db5fd6171efc03dd6129` added a useful Document Inbox prototype, but it was not mounted by FastAPI, duplicated navigation/design tokens, and had no confirmed CI evidence. The result was returned for rework rather than merged.
