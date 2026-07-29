@@ -5,10 +5,10 @@ from __future__ import annotations
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-from .document_storage import DocumentStorageError, resolve_storage_key
+from .document_storage import DocumentStorageError, read_document
 from .models import DocumentInboxDocument, User
 from .security import current_user, db
 
@@ -26,7 +26,7 @@ def _owned_document(session: Session, user: User, document_id: str) -> DocumentI
     return document
 
 
-@router.get("/api/documents/{document_id}/file", response_class=FileResponse)
+@router.get("/api/documents/{document_id}/file", response_class=Response)
 def open_document_file(
     document_id: str,
     user: User = Depends(current_user),
@@ -39,16 +39,13 @@ def open_document_file(
         raise HTTPException(415, "Unsupported document media type")
 
     try:
-        path = resolve_storage_key(document.stored_name)
+        content = read_document(document.stored_name)
     except DocumentStorageError as error:
         raise HTTPException(404, "Document file not found") from error
 
-    if not path.is_file() or path.is_symlink():
-        raise HTTPException(404, "Document file not found")
-
     encoded_name = quote(document.original_name, safe="")
-    return FileResponse(
-        path=path,
+    return Response(
+        content=content,
         media_type=document.media_type,
         headers={
             "Content-Disposition": f"inline; filename*=UTF-8''{encoded_name}",
