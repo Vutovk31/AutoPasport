@@ -1,3 +1,5 @@
+import './scan-review.js';
+
 const REVIEW_STATUS = 'needs_review';
 const REVIEW_LABEL = 'Проверить данные';
 const OPEN_LABEL = 'Открыть документ';
