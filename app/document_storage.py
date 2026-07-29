@@ -28,6 +28,9 @@ class DocumentStorageBackend(Protocol):
     def resolve(self, storage_key: str) -> Path:
         """Return a local readable path for a validated storage key."""
 
+    def read(self, storage_key: str) -> bytes:
+        """Return the complete private object for an authorized delivery boundary."""
+
     def write_atomic(self, storage_key: str, data: bytes) -> Path:
         """Persist a complete object atomically and return its local path."""
 
@@ -51,6 +54,15 @@ class LocalDocumentStorage:
         except ValueError as error:
             raise DocumentStorageError("Document storage key escapes storage root") from error
         return candidate
+
+    def read(self, storage_key: str) -> bytes:
+        path = self.resolve(storage_key)
+        if not path.is_file() or path.is_symlink():
+            raise DocumentStorageError("Document file not found")
+        try:
+            return path.read_bytes()
+        except OSError as error:
+            raise DocumentStorageError("Unable to read document") from error
 
     def write_atomic(self, storage_key: str, data: bytes) -> Path:
         destination = self.resolve(storage_key)
@@ -94,9 +106,15 @@ def get_document_storage() -> DocumentStorageBackend:
 
 
 def resolve_storage_key(storage_key: str) -> Path:
-    """Compatibility boundary used by file delivery."""
+    """Compatibility boundary retained for local storage maintenance and tests."""
 
     return get_document_storage().resolve(storage_key)
+
+
+def read_document(storage_key: str) -> bytes:
+    """Backend-neutral boundary used by owner-only file delivery."""
+
+    return get_document_storage().read(storage_key)
 
 
 def write_document_atomic(storage_key: str, data: bytes) -> Path:
