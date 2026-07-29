@@ -9,7 +9,6 @@ vehicle history.
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from pathlib import Path
 import json
 import os
 import secrets
@@ -19,14 +18,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .document_intake import DocumentIntakeError, validate_document_intake
+from .document_storage import delete_document, write_document_atomic
 from .models import DocumentAIDraft, DocumentInboxDocument, User, Vehicle
 from .security import current_user, db, mutation_guard
 
 
 router = APIRouter(tags=["document-inbox"])
-STORAGE_ROOT = Path(os.getenv("STORAGE_PATH", "./data/storage")).resolve()
-INBOX_STORAGE = STORAGE_ROOT / "document_inbox"
-INBOX_STORAGE.mkdir(parents=True, exist_ok=True)
 MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(5 * 1024 * 1024)))
 
 
@@ -148,9 +145,7 @@ async def upload_vehicle_document(
         raise _intake_http_error(error) from error
 
     stored_name = f"document_inbox/{secrets.token_urlsafe(18)}{validated.suffix}"
-    physical_path = STORAGE_ROOT / stored_name
-    physical_path.parent.mkdir(parents=True, exist_ok=True)
-    physical_path.write_bytes(data)
+    write_document_atomic(stored_name, data)
 
     timestamp = datetime.now(timezone.utc)
     document = DocumentInboxDocument(
@@ -175,7 +170,7 @@ async def upload_vehicle_document(
         session.refresh(document)
     except Exception:
         session.rollback()
-        physical_path.unlink(missing_ok=True)
+        delete_document(stored_name)
         raise
 
     return _serialize_document(document)
