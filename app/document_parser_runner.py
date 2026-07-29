@@ -22,7 +22,7 @@ from .document_parser_jobs import (
     mark_document_processing_failed,
 )
 from .document_storage import DocumentStorageError, read_document
-from .models import DocumentAIDraft, DocumentInboxDocument
+from .models import DocumentAIDraft
 
 
 class DocumentParserRunnerError(RuntimeError):
@@ -86,6 +86,8 @@ def _validate_result(result: DocumentParserResult) -> tuple[dict[str, Any], dict
 def _safe_failure_reason(error: Exception) -> str:
     if isinstance(error, DocumentStorageError):
         return "Document storage read failed"
+    if isinstance(error, IntegrityError):
+        return "Document draft persistence conflict"
     if isinstance(error, DocumentParserRunnerError):
         return str(error)
     return "Document parser failed"
@@ -137,7 +139,7 @@ def run_document_parser(
         session.commit()
         session.refresh(draft)
         return draft
-    except (DocumentParserJobError, IntegrityError):
+    except DocumentParserJobError:
         session.rollback()
         raise
     except Exception as error:
