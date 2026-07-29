@@ -18,6 +18,7 @@ from .document_file_api import router as document_file_router
 from .document_inbox_api import router as document_inbox_router
 from .document_review_page import router as document_review_page_router
 from .document_storage_health import router as document_storage_health_router
+from .readiness import router as readiness_router
 from .security import current_user, db
 from .storage_quota import owner_storage_usage
 from .share_limits import ShareQuotaExceeded, active_share_links, owner_share_usage
@@ -33,6 +34,7 @@ app.include_router(document_file_router)
 app.include_router(document_review_page_router)
 app.include_router(confirmed_visit_page_router)
 app.include_router(document_storage_health_router)
+app.include_router(readiness_router)
 app.router.routes = [route for route in app.router.routes if getattr(route, "path", None) != "/health"]
 
 @app.get("/health", tags=["operations"])
