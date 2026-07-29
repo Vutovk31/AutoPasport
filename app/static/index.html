@@ -90,14 +90,35 @@
           <h1>Добавить документ</h1>
           <p>Чек, заказ-наряд, акт, диагностика или смета сначала попадут в черновик. Паспорт обновляется только после подтверждения владельцем.</p>
         </div>
+        <section id="scanVehicleContext" class="scan-vehicle-context card" aria-live="polite">
+          <div id="scanVehicleSelected" class="scan-vehicle-selected" hidden>
+            <div class="scan-vehicle-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M5 17h14M6.5 17v2M17.5 17v2M4 13l2-5h12l2 5v4H4v-4Zm3 1h.01M17 14h.01"/>
+              </svg>
+            </div>
+            <div class="scan-vehicle-copy">
+              <p class="eyebrow">Документ для автомобиля</p>
+              <h2 id="scanVehicleName">Автомобиль не выбран</h2>
+              <p id="scanVehicleMeta">Выберите автомобиль в гараже.</p>
+            </div>
+            <button id="changeScanVehicle" type="button" class="secondary scan-vehicle-change">Сменить</button>
+          </div>
+          <div id="scanVehicleEmpty" class="scan-vehicle-empty">
+            <p class="eyebrow">Документ для автомобиля</p>
+            <h2>Сначала выберите автомобиль</h2>
+            <p>Документ нельзя загрузить без привязки к конкретному паспорту.</p>
+            <button id="scanAddVehicle" type="button">Выбрать в гараже</button>
+          </div>
+        </section>
         <section class="scan-card card">
           <div class="scan-icon">▤</div>
           <h2>Документ → черновик записи</h2>
-          <p>Сейчас экран подготовлен под будущий AI-парсер. Следующий этап — распознавание текста и заполнение карточки визита.</p>
+          <p>Файл сохраняется во входящих документах. Распознанные данные попадут в историю только после вашей проверки и подтверждения.</p>
           <input id="scanFile" type="file" accept="image/*,application/pdf" capture="environment" hidden>
           <button id="startScan" type="button">Сфотографировать / загрузить</button>
           <button id="scanToManual" type="button" class="secondary">Добавить запись вручную</button>
-          <p id="scanStatus" class="scan-status">AI-распознавание будет подключено отдельным безопасным инкрементом.</p>
+          <p id="scanStatus" class="scan-status">Выберите чек, заказ-наряд, акт, диагностику или смету.</p>
         </section>
         <section class="draft-flow card">
           <h2>Как это должно работать</h2>

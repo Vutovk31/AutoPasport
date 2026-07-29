@@ -179,3 +179,16 @@ VERSION
 ```
 
 `VERSION` является каноническим номером релиза. Composition root читает его при импорте, блокирует пустое значение, задаёт OpenAPI metadata и заменяет legacy `/health` route единым endpoint с тем же номером. Релизный тест требует совпадения runtime response, FastAPI metadata и файла `VERSION`; PWA cache identifier меняется при выпуске, чтобы установленный клиент получил новый application shell.
+
+## Scan vehicle context boundary
+
+```text
+owner selects vehicle in garage
+→ frontend stores vehicleId from an owned `/api/vehicles` row
+→ scan screen renders make/model + masked VIN + mileage
+→ upload action is enabled
+→ POST /api/vehicles/{vehicleId}/documents
+→ backend repeats owner/vehicle boundary check
+```
+
+Без выбранного автомобиля кнопка загрузки отключена. Смена автомобиля возвращает пользователя в гараж и восстанавливает фокус на активной карточке. Клиентский контекст уменьшает вероятность ошибки выбора, но не заменяет серверную проверку принадлежности автомобиля.

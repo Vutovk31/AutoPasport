@@ -2,17 +2,18 @@
 
 ## Критично
 
-- Подтвердить `autopassport/release-check = success` для merge commit версии `0.25.0` в `main`.
-- Скачать итоговый JSON artifact и зафиксировать `passed=true`, пустой `failed_steps`, commit SHA и SHA-256 artifact.
+- Устранить 19 падений полного `pytest`, зафиксированных на исходном `HEAD 3e98db6`; профильные тесты сценария «автомобиль → скан» проходят отдельно.
+- После исправления подтвердить `autopassport/release-check = success` для актуального merge commit.
 - Выполнить smoke test на реальном deployment target: регистрация → автомобиль → сервисный визит → документ → публичная ссылка → PDF → backup/restore.
+- Проверить на физическом телефоне сценарий двух автомобилей и убедиться, что экран «Скан» показывает фактический выбранный паспорт до загрузки.
 - Проверить production-пример конфигурации на выбранном deployment target.
 - Перед первым production cleanup выполнить dry-run и сохранить JSON audit report вместе с backup.
 
 ## Следующий функциональный блок
 
-- Реализовать retention cleanup истёкших и отозванных ShareLink после установленного периода аудита.
-- Добавить maintenance runner, который запускает cleanup-команды отдельно от application startup.
-- Подтвердить, что backup после attachment cleanup не содержит physically purged файлов, а SQLite сохраняет purge audit metadata.
+- Подключить parser worker к `document_parser_jobs` без прямой записи в историю.
+- Создавать reviewable draft только через существующую границу `DocumentAIDraft`.
+- Показать на экране «Скан» диагностируемый путь `processing → needs_review/failed` с повторной обработкой после ошибки.
 
 ## После MVP security baseline
 

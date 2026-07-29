@@ -83,6 +83,23 @@ function maskVin(vin) {
   return `${value.slice(0, 7)}••••••${value.slice(-4)}`;
 }
 
+function renderScanVehicleContext(vehicle = null) {
+  const selected = $('#scanVehicleSelected');
+  const empty = $('#scanVehicleEmpty');
+  const uploadButton = $('#startScan');
+  if (!selected || !empty) return;
+
+  selected.hidden = !vehicle;
+  empty.hidden = Boolean(vehicle);
+  if (uploadButton) uploadButton.disabled = !vehicle;
+  if (!vehicle) return;
+
+  $('#scanVehicleName').textContent = `${vehicle.make || ''} ${vehicle.model || ''}`.trim() || 'Выбранный автомобиль';
+  const vehicleYear = vehicle.year ? ` · ${vehicle.year}` : '';
+  const mileage = Number(vehicle.current_mileage || 0).toLocaleString('ru-RU');
+  $('#scanVehicleMeta').textContent = `${maskVin(vehicle.vin)}${vehicleYear} · ${mileage} км`;
+}
+
 function renderStorage(usage) {
   $('#storageAttachments').textContent = `${usage.attachments} из ${usage.max_attachments}`;
   $('#storageBytes').textContent = `${formatBytes(usage.bytes_used)} из ${formatBytes(usage.max_bytes)}`;
@@ -176,6 +193,7 @@ function renderGarageVehicles(rows) {
   $('#garageCount').textContent = `${rows.length}`;
   if (!rows.length) {
     $('#garage').innerHTML = '<button type="button" class="vehicle-card" data-view="add"><div class="vehicle-card-top"><div class="car-icon">＋</div><div><small>Автомобиль</small><h2>Добавьте авто</h2><small>VIN, пробег и базовые данные</small></div></div></button>';
+    renderScanVehicleContext();
     return;
   }
   $('#garage').innerHTML = rows.map(v => `
@@ -195,6 +213,7 @@ function renderGarageVehicles(rows) {
     </button>
   `).join('');
   document.querySelectorAll('.vehicle-card[data-id]').forEach(button => button.onclick = () => openVehicle(button.dataset.id));
+  renderScanVehicleContext(rows.find(vehicle => String(vehicle.id) === String(vehicleId)) || null);
 }
 
 async function garage() {
@@ -453,7 +472,7 @@ document.addEventListener('click', event => {
   const trigger = event.target.closest('[data-view]');
   if (!trigger) return;
   const view = trigger.dataset.view;
-  if ((view === 'passport' || view === 'scan') && !vehicleId) alert('Сначала добавьте или выберите автомобиль.');
+  if (view === 'passport' && !vehicleId) alert('Сначала добавьте или выберите автомобиль.');
   setView(view);
 });
 
@@ -461,11 +480,30 @@ ensureDocumentInboxUi();
 const startScan = $('#startScan');
 const scanFile = $('#scanFile');
 const scanToManual = $('#scanToManual');
+const changeScanVehicle = $('#changeScanVehicle');
+const scanAddVehicle = $('#scanAddVehicle');
 if (startScan && scanFile) startScan.onclick = () => {
-  if (!vehicleId) return alert('Сначала добавьте или выберите автомобиль.');
+  if (!vehicleId) {
+    $('#scanStatus').className = 'scan-status error';
+    $('#scanStatus').textContent = 'Сначала выберите автомобиль для документа.';
+    return;
+  }
   scanFile.click();
 };
 if (scanToManual) scanToManual.onclick = () => setView('add');
+if (changeScanVehicle) changeScanVehicle.onclick = () => {
+  setView('home');
+  requestAnimationFrame(() => document.querySelector('.vehicle-card.active[data-id]')?.focus());
+};
+if (scanAddVehicle) scanAddVehicle.onclick = () => {
+  setView(garageRows.length ? 'home' : 'add');
+  requestAnimationFrame(() => {
+    const target = garageRows.length
+      ? document.querySelector('.vehicle-card[data-id]')
+      : document.querySelector('#vehicleForm input[name="vin"]');
+    target?.focus();
+  });
+};
 if (scanFile) scanFile.onchange = async () => {
   const file = scanFile.files?.[0];
   const status = $('#scanStatus');
