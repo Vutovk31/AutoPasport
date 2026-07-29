@@ -2,20 +2,18 @@
 
 from __future__ import annotations
 
-import os
-from pathlib import Path
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
+from .document_storage import DocumentStorageError, resolve_storage_key
 from .models import DocumentInboxDocument, User
 from .security import current_user, db
 
 
 router = APIRouter(tags=["document-files"])
-STORAGE_ROOT = Path(os.getenv("STORAGE_PATH", "./data/storage")).resolve()
 ALLOWED_INLINE_MEDIA_TYPES = {"application/pdf", "image/jpeg", "image/png"}
 
 
@@ -26,15 +24,6 @@ def _owned_document(session: Session, user: User, document_id: str) -> DocumentI
     if document.owner_id != user.id:
         raise HTTPException(403, "Forbidden")
     return document
-
-
-def _stored_path(stored_name: str) -> Path:
-    candidate = (STORAGE_ROOT / stored_name).resolve()
-    try:
-        candidate.relative_to(STORAGE_ROOT)
-    except ValueError as error:
-        raise HTTPException(404, "Document file not found") from error
-    return candidate
 
 
 @router.get("/api/documents/{document_id}/file", response_class=FileResponse)
@@ -49,8 +38,12 @@ def open_document_file(
     if document.media_type not in ALLOWED_INLINE_MEDIA_TYPES:
         raise HTTPException(415, "Unsupported document media type")
 
-    path = _stored_path(document.stored_name)
-    if not path.is_file():
+    try:
+        path = resolve_storage_key(document.stored_name)
+    except DocumentStorageError as error:
+        raise HTTPException(404, "Document file not found") from error
+
+    if not path.is_file() or path.is_symlink():
         raise HTTPException(404, "Document file not found")
 
     encoded_name = quote(document.original_name, safe="")
