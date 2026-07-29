@@ -34,6 +34,8 @@ function renderAcceptedDocument(documentRecord) {
   if (!panel || !documentRecord?.id) return;
 
   panel.replaceChildren();
+  panel.dataset.documentId = String(documentRecord.id);
+  panel.dataset.vehicleId = String(documentRecord.vehicle_id || '');
 
   const heading = document.createElement('strong');
   heading.textContent = 'Документ принят';
@@ -43,6 +45,7 @@ function renderAcceptedDocument(documentRecord) {
   name.textContent = documentRecord.original_name || 'Загруженный документ';
 
   const status = document.createElement('small');
+  status.className = 'scan-upload-receipt-status';
   status.textContent = documentRecord.status === REVIEW_STATUS
     ? 'Нужно проверить распознанные данные'
     : 'Документ добавлен во входящие';
@@ -79,6 +82,9 @@ function renderAcceptedDocument(documentRecord) {
 
   panel.append(heading, name, status, actions);
   panel.hidden = false;
+  globalThis.dispatchEvent(new CustomEvent('autopassport:document-accepted', {
+    detail: { document: documentRecord },
+  }));
 }
 
 const nativeFetch = globalThis.fetch.bind(globalThis);
