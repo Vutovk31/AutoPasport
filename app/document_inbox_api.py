@@ -18,6 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .document_intake import DocumentIntakeError, validate_document_intake
+from .document_parser_dispatch import dispatch_document_for_parsing
 from .document_storage import delete_document, write_document_atomic
 from .models import DocumentAIDraft, DocumentInboxDocument, User, Vehicle
 from .security import current_user, db, mutation_guard
@@ -173,6 +174,7 @@ async def upload_vehicle_document(
         delete_document(stored_name)
         raise
 
+    dispatch_document_for_parsing(document.id)
     return _serialize_document(document)
 
 
