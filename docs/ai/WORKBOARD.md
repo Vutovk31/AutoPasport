@@ -6,12 +6,12 @@ Canonical branch: `main`
 
 ## Current main
 
-- Governance head reviewed before this update: `00668546e18df19d2e5c1c96c99badefdc69ad15`
+- Governance head reviewed before this update: `27a7fef5ba83af7a675009d30dbfd4a516ea2c7e`
 - Release gate: **BLOCKED**
-- Latest factual CI run: `30527534937`
-- CI head SHA: `00668546e18df19d2e5c1c96c99badefdc69ad15`
+- Latest factual CI run: `30531487181`
+- CI head SHA: `27a7fef5ba83af7a675009d30dbfd4a516ea2c7e`
 - Confirmed release-check result: `7/8` checks passed; `test_suite` failed
-- Latest detailed pytest matrix remains the previously confirmed `20 failed, 222 passed, 1 warning`; the current run reproduced a failed `test_suite`, but its connector log did not expose a newer detailed pytest count
+- Confirmed pytest result from the uploaded CI artifact: `20 failed, 222 passed, 1 warning in 29.64s`
 
 No feature or regression-repair branch may be merged until its assigned test set is factually green and the integrator has reviewed the diff.
 
@@ -21,7 +21,7 @@ Mobile App Shell → Scan document → Document Inbox → OCR/AI draft → owner
 
 ## Failure ownership
 
-### Backend: 14 failures in the latest detailed pytest matrix
+### Backend: 14 failures in the latest confirmed pytest matrix
 
 - `tests/test_document_ai_draft_persistence.py`: 2
 - `tests/test_document_inbox_persistence.py`: 2
@@ -31,7 +31,7 @@ Mobile App Shell → Scan document → Document Inbox → OCR/AI draft → owner
 - `tests/test_document_storage_read_boundary.py`: 1
 - `tests/test_readiness.py`: 4
 
-### MVE: 6 failures in the latest detailed pytest matrix
+### MVE: 6 failures in the latest confirmed pytest matrix
 
 - `tests/test_confirmed_visit_post_flow.py`: 1
 - `tests/test_document_review_confirmation_frontend.py`: 3
@@ -59,12 +59,12 @@ Acceptance criteria:
 
 - Task: `MVE-026-CI-01C`
 - Branch: `agent/mve-ui`
-- Status: returned for rework; ahead by 2 commits and behind by 5 commits relative to reviewed `main`
+- Status: returned for rework; ahead by 2 commits and behind by 6 commits relative to reviewed `main`
 - Reviewed commit: `749ed2ce41f396744b953fd433b1b5643a25cf5f`
 - Decision: **NOT MERGED**
 
 Blocking findings:
-1. Six MVE failures remain across three files in the latest detailed matrix; the candidate changes only one test file.
+1. Six MVE failures remain across three files in the confirmed current-main matrix; the candidate changes only one test file.
 2. No factual pytest or CI evidence exists for the branch.
 3. The branch must synchronize with current `main` before further work.
 4. `MVE_HANDOFF.md` still reports task `MVE-026-CI-01`, not the active `MVE-026-CI-01C` assignment.
@@ -88,7 +88,7 @@ Acceptance criteria:
 
 ## Known blockers
 
-1. Current full release check still fails at `test_suite`.
+1. Current full release check fails at `test_suite`: `20 failed, 222 passed, 1 warning`.
 2. No real OCR/AI provider is approved or configured.
 3. Render runtime after parser lifespan changes is not verified.
 4. Production parser dispatch remains `disabled`.
