@@ -7,7 +7,7 @@ Canonical branch: `main`
 ## Current main
 
 Product-code commit reviewed: `7d0252c88581e11c271ffb5285933b786b6080a6`
-Governance head before this update: `204313f6511013eb6d46ce7329ebfea809698cae`
+Governance head before this update: `1e505d8f0619dcba6d63a5cef0cfd24652308638`
 Release gate: **BLOCKED**
 Confirmed CI result: `20 failed, 222 passed, 1 warning`.
 Failed release step: `test_suite`.
@@ -28,7 +28,7 @@ Mobile App Shell
 ## BACKEND
 
 Task: `APP-026-CI-01`
-Status: assigned; no branch changes submitted
+Status: assigned; branch synchronized with current governance baseline; no implementation submitted
 Branch: `agent/backend`
 Objective: restore backend release-gate compatibility after the parser/storage/readiness increments.
 
@@ -98,7 +98,7 @@ Required actions:
 
 ## Integration queue
 
-- Backend: waiting for `APP-026-CI-01` handoff.
+- Backend: branch synchronized; waiting for `APP-026-CI-01` implementation and test evidence.
 - MVE: commit structurally accepted, merge blocked pending `MVE-026-CI-01A` test evidence.
 - Main: feature merges frozen until CI regressions are resolved.
 
