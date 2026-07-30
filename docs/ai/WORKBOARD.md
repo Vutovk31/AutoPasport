@@ -6,7 +6,7 @@ Canonical branch: `main`
 
 ## Current main
 
-- Governance head reviewed before this update: `27a7fef5ba83af7a675009d30dbfd4a516ea2c7e`
+- Governance head reviewed before this update: `1d71b685eef9b5c02f220f49ed2ab129d0f37e2f`
 - Release gate: **BLOCKED**
 - Latest factual CI run: `30531487181`
 - CI head SHA: `27a7fef5ba83af7a675009d30dbfd4a516ea2c7e`
@@ -43,7 +43,7 @@ Each worker must classify every assigned failure as a production defect or stale
 
 - Task: `APP-026-CI-01C`
 - Branch: `agent/backend`
-- Status: synchronized with reviewed `main`; no implementation or completed handoff submitted
+- Status: identical to reviewed `main`; no implementation or completed handoff submitted
 - Scope: models, parser runner, document storage, storage health/read boundary, readiness, and assigned backend tests only
 
 Acceptance criteria:
@@ -59,7 +59,7 @@ Acceptance criteria:
 
 - Task: `MVE-026-CI-01C`
 - Branch: `agent/mve-ui`
-- Status: returned for rework; ahead by 2 commits and behind by 6 commits relative to reviewed `main`
+- Status: returned for rework; ahead by 2 commits and behind by 7 commits relative to reviewed `main`
 - Reviewed commit: `749ed2ce41f396744b953fd433b1b5643a25cf5f`
 - Decision: **NOT MERGED**
 
@@ -93,7 +93,7 @@ Acceptance criteria:
 3. Render runtime after parser lifespan changes is not verified.
 4. Production parser dispatch remains `disabled`.
 5. Mobile runtime at 320–430 px is not verified in a real browser.
-6. Worker branches have produced no new factually green repair increment during this review cycle.
+6. Worker branches produced no new factually green repair increment during this review cycle.
 
 ## Next integration action
 
