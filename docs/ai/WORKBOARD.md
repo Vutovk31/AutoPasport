@@ -6,7 +6,7 @@ Canonical branch: `main`
 
 ## Current main
 
-- Governance head reviewed before this update: `1d71b685eef9b5c02f220f49ed2ab129d0f37e2f`
+- Governance head reviewed before this update: `2adc535400fb2cc8e8dc96ef4f691b986816a947`
 - Release gate: **BLOCKED**
 - Latest factual CI run: `30531487181`
 - CI head SHA: `27a7fef5ba83af7a675009d30dbfd4a516ea2c7e`
@@ -59,7 +59,7 @@ Acceptance criteria:
 
 - Task: `MVE-026-CI-01C`
 - Branch: `agent/mve-ui`
-- Status: returned for rework; ahead by 2 commits and behind by 7 commits relative to reviewed `main`
+- Status: returned for rework; ahead by 2 commits and behind by 8 commits relative to reviewed `main`
 - Reviewed commit: `749ed2ce41f396744b953fd433b1b5643a25cf5f`
 - Decision: **NOT MERGED**
 
