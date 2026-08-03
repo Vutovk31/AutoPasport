@@ -1,10 +1,18 @@
-# AutoPassport v0.25.0
+# ARCHIVED — AutoPassport v0.25.0
 
-Каноническая MVP-сборка электронного паспорта автомобиля с ремонтными визитами, позициями работ и деталей, trust-моделью, временным публичным паспортом, PDF-отчётом, PWA и backup/restore SQLite + storage.
+> **Archive/reference only.** Active AutoPassport development moved to the private canonical repository `Vutovk31/AutoPas` on 2026-08-03.
+>
+> Do not create new product commits, worker branches, current pull requests, releases, CI decisions, or deployments from this repository. Use it only to review historical code, tests, architecture, decisions, and lessons before selectively reusing verified material in `Vutovk31/AutoPas`.
 
-## Статус репозитория
+This repository was originally referenced as `Vutovk31/AutoPasport0.1` and currently resolves on GitHub as `Vutovk31/APv1`.
 
-GitHub содержит каноническую структуру проекта:
+---
+
+Каноническая на момент v0.25.0 MVP-сборка электронного паспорта автомобиля с ремонтными визитами, позициями работ и деталей, trust-моделью, временным публичным паспортом, PDF-отчётом, PWA и backup/restore SQLite + storage.
+
+## Исторический статус репозитория
+
+GitHub содержит архивную структуру проекта:
 
 ```text
 app/
@@ -15,9 +23,9 @@ docs/
 .github/workflows/
 ```
 
-Рабочими считаются только файлы внутри канонических директорий. Версия v0.25.0 является первым полностью прошедшим единый release verification MVP-релизом; последующие изменения ведутся в секции `Unreleased` до следующего подтверждённого зелёного CI и релизного тега.
+Версия v0.25.0 была первым полностью прошедшим единый release verification MVP-релизом в этой исторической линии. Все последующие активные изменения должны выполняться только в `Vutovk31/AutoPas`.
 
-## Локальный запуск
+## Локальный запуск исторической сборки
 
 ```bash
 python -m venv .venv
@@ -38,7 +46,7 @@ pytest -q
 
 Фактическое число пройденных тестов фиксируется CI для конкретного commit SHA; README не закрепляет устаревающее статическое число.
 
-## Полная проверка релиза
+## Полная проверка исторического релиза
 
 ```bash
 python scripts/release_check.py
@@ -134,6 +142,6 @@ docker compose up --build
 
 Контейнер применяет Alembic migrations на старте и поднимает приложение на `http://127.0.0.1:8000`.
 
-## CI
+## Historical CI
 
-GitHub Actions запускает единый release verification runner и всегда сохраняет JSON-отчёт. Версия повышается только после успешного отчёта по всем release gates; runtime `/health`, OpenAPI и PWA cache version получают номер из релизного контура.
+GitHub Actions в этой линии запускал единый release verification runner и сохранял JSON-отчёт. Эти workflow и статусы являются историческими доказательствами и не определяют готовность текущего проекта в `Vutovk31/AutoPas`.
